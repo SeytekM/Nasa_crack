@@ -6,3 +6,4 @@ export * from './fdr';
 export * from './yearsToSignificance';
 export * from './series';
 export * from './analyze';
+export * from './homogeneity';

@@ -24,3 +24,23 @@ Running log of decisions made autonomously. Newest at the bottom of each phase.
 |---|---|---|
 | D1.1 | TypeScript **6.0.x**, not 7.0. | `typescript-eslint` 8.72 peer range is `<6.1.0`. |
 | D1.2 | Keep **Apache ECharts** (modular import from `echarts/core`). | Built-in dataZoom/brush, area bands for CIs, `getDataURL` for PNG export, good perf. |
+| D1.3 | **Primary analysis basis = annual aggregates** (1 point per complete year); "monthly anomalies" offered as an alternative basis. Seasonal MK always runs on raw monthly values. | Matches the "per decade" narrative, removes the seasonal cycle by construction, works for summed variables (mm/yr), lower autocorrelation. Both bases are tested. |
+| D1.4 | **Primary p-value = OLS with AR(1) correction** (Santer et al. 2000). MK (+ Sen) shown side-by-side; if verdicts differ we show a "methods disagree" note. | SPEC §6: "show the corrected variant as primary". |
+| D1.5 | When residual r1 ≤ 0 we set **n_eff = n** (no inflation of the sample size). | Conservative; negative r1 would otherwise *increase* the effective sample. |
+| D1.6 | r1 uses only pairs exactly one step apart (gaps don't create fake neighbours). | Same as the standard formula when there are no gaps. |
+| D1.7 | Sen CI follows `scipy.stats.theilslopes` (Sen 1968 eq. 2.6 / Gilbert 1987) incl. NumPy's round-half-even when picking ranks. | Lets us test against SciPy exactly. |
+| D1.8 | "Signal-to-noise" effect size = (trend × span) / residual SD. | Standardised, unit-free, readable: "change ÷ typical year-to-year wobble". |
+| D1.9 | Years-to-significance assumes same slope, residual SD and r1; horizon 150 years; null otherwise. | SPEC §4.11, always shown with a caveat. |
+
+## Phase 2 — data layer
+
+| # | Decision | Why |
+|---|---|---|
+| D2.1 | **Dropped `EVPTRNS`.** | It exists in POWER but values are implausibly small for an energy flux (Bishkek mean 0.15 MJ/m²/day ≈ 1.7 W/m²; exactly 0 over the former Aral Sea). We could not pin down its meaning, so we don't show it. Catalog = 19 variables. |
+| D2.2 | Solar/cloud variables **default to 2001→** (homogeneous CERES segment); user may extend back to 1984 with a warning. | Real data show a step at 2001: e.g. CLOUD_AMT at Kyzylkum 54.8 % (1984–2000) → 36.2 % (2001–2017). |
+| D2.3 | **Step-change check** (`stats/homogeneity.ts`): BIC of one-jump model vs linear trend; ΔBIC > 10 → "possible step" warning. | CLOUD_AMT also drops abruptly in **2017** over Central Asia (Bishkek 75 % → 61 %, Tian Shan 82 % → 62 %) but not in Madrid/Kenya/Sahara — almost certainly an input-satellite change, not climate. Users must be told when a "trend" is really a jump. |
+| D2.4 | Constant series (e.g. snow depth = 0 in the tropics) → verdict "insufficient" with a "doesn't vary here" message instead of a misleading p = 1. | Honesty. |
+| D2.5 | Each point request fetches **all 19 variables, 1981 → last complete year** once; period selection is client-side. | One request per place = instant re-analysis, matches Detective Scan, simple cache. |
+| D2.6 | Loader order: exact bundled preset → IndexedDB → live → bundled in same MERRA-2 cell → cached. Provenance shown in UI. | Offline-proof demo, fast repeat visits. |
+| D2.7 | All bundled data lives in `public/data/demo/` (17 points, 8 regional grids, 2 GIBS images; ≈ 9 MB). | SPEC: Case Files must not depend on Wi-Fi. |
+| D2.8 | Case-file candidates verified on real data (see `scripts/dev/summarize.ts`). Kept: Svalbard warming; Aral (images + T2M_MAX significant, mean T not yet); Central Asia snow both ways (mountains ↑, plains ↓, both warming & moistening); Bishkek warming; Issyk-Kul T2M_MIN "almost significant". East Africa precipitation is bundled for the Trend Map but its Lake Victoria decline happens largely around 1998 (ΔBIC ≈ 7), so it is presented with that caveat, not as a headline case. | Science before spectacle. |

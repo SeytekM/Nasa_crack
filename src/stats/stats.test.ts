@@ -30,6 +30,7 @@ import {
   verdictFromP,
   wilksFdr,
   yearsToSignificance,
+  stepChangeCheck,
 } from './index';
 
 type Num = number | null;
@@ -304,5 +305,32 @@ describe('high-level analysis and verdicts', () => {
     const a = analyzeTrend([1, 2, 3, 4, 5, 6], [2, 2, 2, 2, 2, 2], { stepYears: 1 });
     expect(a.ols.slope).toBe(0);
     expect(a.mk.s).toBe(0);
+    expect(a.verdict).toBe('insufficient');
+  });
+});
+
+describe('step-change (homogeneity) check', () => {
+  const x = Array.from({ length: 30 }, (_, i) => 1990 + i);
+  const noise = x.map((_, i) => 0.1 * Math.sin(i * 1.7) + 0.05 * Math.cos(i * 3.1));
+  it('flags a series that is one abrupt jump', () => {
+    const y = x.map((xi, i) => (xi >= 2005 ? 2 : 0) + noise[i]);
+    const r = stepChangeCheck(x, y)!;
+    expect(r.flagged).toBe(true);
+    expect(r.breakX).toBe(2005);
+    expect(r.stepSize).toBeCloseTo(2, 1);
+  });
+  it('does not flag a steady trend', () => {
+    const y = x.map((xi, i) => 0.05 * (xi - 1990) + noise[i]);
+    expect(stepChangeCheck(x, y)!.flagged).toBe(false);
+  });
+  it('returns null for short series and analyzeTrend reports the warning', () => {
+    expect(stepChangeCheck([1, 2, 3], [1, 2, 3])).toBeNull();
+    const y = x.map((xi, i) => (xi >= 2005 ? 2 : 0) + noise[i]);
+    expect(analyzeTrend(x, y, { stepYears: 1 }).warnings).toContain('possible-step');
+  });
+  it('constant series → insufficient with "constant" warning', () => {
+    const a = analyzeTrend(x, x.map(() => 0), { stepYears: 1 });
+    expect(a.verdict).toBe('insufficient');
+    expect(a.warnings).toContain('constant');
   });
 });

@@ -1,5 +1,6 @@
 import { finitePairs } from './descriptive';
 import { mannKendall, mannKendallHamedRao, senSlope, seasonalMannKendall, type MannKendallResult, type SenResult, type SeasonalMkResult } from './mannKendall';
+import { stepChangeCheck, type StepCheckResult } from './homogeneity';
 import { ar1Adjust, ols, type Ar1AdjustedFit, type OlsFit } from './ols';
 import { annualAggregate, decimalTime, monthlyAnomalies, monthlyClimatology, toSeasonMatrix, type AnnualAggregation, type MonthlyRecord } from './series';
 import { yearsToSignificance, type YearsToSignificanceResult } from './yearsToSignificance';
@@ -19,7 +20,9 @@ export type WarningCode =
   | 'too-few-points' // fewer than 5 points: no test
   | 'strong-autocorrelation' // r1 > 0.5
   | 'degenerate-autocorrelation' // nEff ≤ 2
-  | 'methods-disagree';
+  | 'methods-disagree'
+  | 'constant' // the variable does not vary here (e.g. no snow)
+  | 'possible-step'; // one abrupt jump fits better than a steady trend
 
 export type Agreement = 'agree' | 'significance-differs' | 'direction-differs';
 
@@ -49,6 +52,7 @@ export interface TrendAnalysis {
   /** Total change divided by the residual SD ("signal-to-noise"). */
   signalToNoise: number;
   yearsToSignificance: YearsToSignificanceResult | null;
+  step: StepCheckResult | null;
   warnings: WarningCode[];
 }
 
@@ -74,21 +78,28 @@ export function analyzeTrend(xIn: ArrayLike<number>, yIn: ArrayLike<number>, opt
   const spanYears = n ? xEnd - xStart : 0;
   if (spanYears + step < 10) warnings.push('short-record');
   let p = adj.p;
+  const constant = n > 0 && y.every((v) => v === y[0]);
   if (n < 5) {
     warnings.push('too-few-points');
     p = NaN;
+  } else if (constant) {
+    warnings.push('constant');
+    p = NaN;
   }
+  const stepCheck = n >= 10 && !constant ? stepChangeCheck(x, y) : null;
+  if (stepCheck?.flagged) warnings.push('possible-step');
   if (adj.degenerate) warnings.push('degenerate-autocorrelation');
   else if (adj.r1 > 0.5) warnings.push('strong-autocorrelation');
   const verdict = verdictFromP(p);
-  const mkVerdict = n < 5 ? 'insufficient' : verdictFromP(mk.p);
+  const mkVerdict = n < 5 || constant ? 'insufficient' : verdictFromP(mk.p);
   let agreement: Agreement = 'agree';
-  if (Math.sign(fit.slope) !== Math.sign(sen.slope) && sen.slope !== 0 && fit.slope !== 0) agreement = 'direction-differs';
+  if (constant) agreement = 'agree';
+  else if (Math.sign(fit.slope) !== Math.sign(sen.slope) && sen.slope !== 0 && fit.slope !== 0) agreement = 'direction-differs';
   else if ((verdict === 'significant') !== (mkVerdict === 'significant')) agreement = 'significance-differs';
   if (agreement !== 'agree') warnings.push('methods-disagree');
   const totalChange = fit.slope * spanYears;
   const yts =
-    verdict === 'significant' || n < 5
+    verdict === 'significant' || verdict === 'insufficient'
       ? null
       : yearsToSignificance({
           slopePerYear: fit.slope,
@@ -121,6 +132,7 @@ export function analyzeTrend(xIn: ArrayLike<number>, yIn: ArrayLike<number>, opt
     totalChange,
     signalToNoise: fit.residualSd > 0 ? totalChange / fit.residualSd : NaN,
     yearsToSignificance: yts,
+    step: stepCheck,
     warnings,
   };
 }
