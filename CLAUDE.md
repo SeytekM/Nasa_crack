@@ -13,7 +13,7 @@ Decisions log: [`docs/DECISIONS.md`](docs/DECISIONS.md). Visual direction: [`doc
 - Reanalysis (MERRA-2) is model + assimilated observations, not a direct measurement. Say so.
 - UI strings live in `src/content/i18n/en.ts` (single dictionary). No hardcoded user-facing English in components.
 - `src/stats/` is pure TypeScript with no UI imports, fully tested against SciPy/pymannkendall fixtures (`scripts/make_fixtures.py`).
-- Everything shown in Case Files lives in `public/data/demo/` (offline demo).
+- Everything shown in Case Files lives in `public/data/demo/` (offline demo). Tour numbers are computed live; `src/content/cases.test.ts` guards every claim.
 - No NASA logo (Space Apps rules).
 
 ## Commands
@@ -23,7 +23,8 @@ npm run dev        # Vite dev server
 npm run lint       # ESLint + tsc --noEmit
 npm test           # Vitest
 npm run build      # production build
-npm run prefetch   # download bundled POWER/GIBS data into public/data
+npm run smoke      # Playwright smoke test of dist/ (online + offline)
+NODE_USE_ENV_PROXY=1 npm run prefetch   # re-download bundled POWER/GIBS data into public/data/demo
 python3 scripts/make_fixtures.py   # regenerate stats fixtures
 ```
 
