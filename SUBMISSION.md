@@ -1,6 +1,8 @@
 # Earth Trend Detective — NASA Space Apps submission
 
-> Fill in team name, members and the final demo URL before submitting.
+> Demo: https://seytekm.github.io/Nasa_crack/ · Code: https://github.com/SeytekM/Nasa_crack
+>
+> Fill in team name and members before submitting.
 
 ## One-liner
 

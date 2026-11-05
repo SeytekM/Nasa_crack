@@ -2,6 +2,8 @@
 
 **Is it really changing? Investigate 45 years of NASA Earth data — right in your browser.**
 
+🔎 **Live demo: https://seytekm.github.io/Nasa_crack/**
+
 Pick a place and a variable (temperature, rain, snow, sunlight, wind…), and the
 detective tells you **what is changing, where, by how much, and whether it is
 statistically significant** — in plain language, with the statistics one click
