@@ -320,6 +320,7 @@ export const en = {
     source: 'Source',
     show: 'Show',
     nearbyPlaces: 'Quick picks',
+    morePresets: (n: number) => `+${n} more`,
   },
   wizard: {
     title: 'What are we investigating?',
@@ -362,8 +363,12 @@ export const en = {
     summary: (sig: number, sug: number, total: number) => `${sig} significant · ${sug} suggestive · ${total - sig - sug} not significant (after the multiple-testing correction)`,
     open: 'Open in chart',
     effect: 'Signal-to-noise',
-    sortedBy: 'Sorted by q-value, then by signal-to-noise.',
+    sortedBy: 'Sorted by verdict (after the correction); records that look like a sudden data jump come after clean ones; then by q-value and signal-to-noise.',
     exportCsv: 'Export results (CSV)',
+    unadjusted: (v: string) => `Without the multiple-testing correction this would read “${v}”.`,
+    perDecadeShort: '/decade',
+    stepShort: 'Looks like a sudden jump — possibly a data-source change.',
+    sparkLabel: (name: string) => `${name}: yearly values with trend line`,
   },
   trendMap: {
     title: 'Trend Map — where is it changing?',

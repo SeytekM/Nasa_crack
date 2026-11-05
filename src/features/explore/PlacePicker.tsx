@@ -22,6 +22,7 @@ export function PlacePicker({ value, onPick, compact = false }: { value: PlaceRe
   const [lat, setLat] = useState(String(value.lat));
   const [lon, setLon] = useState(String(value.lon));
   const [err, setErr] = useState<string | null>(null);
+  const [allPresets, setAllPresets] = useState(false);
   const matches = useMemo(() => {
     const s = q.trim().toLowerCase();
     if (!s) return [];
@@ -95,7 +96,7 @@ export function PlacePicker({ value, onPick, compact = false }: { value: PlaceRe
         <div>
           <div className="eyebrow mb-1.5">{t.explore.presets}</div>
           <div className="flex flex-wrap gap-1.5">
-            {PRESETS.map((p) => {
+            {(allPresets ? PRESETS : PRESETS.slice(0, 8)).map((p) => {
               const active = Math.abs(p.lat - value.lat) < 1e-3 && Math.abs(p.lon - value.lon) < 1e-3;
               return (
                 <button
@@ -109,6 +110,11 @@ export function PlacePicker({ value, onPick, compact = false }: { value: PlaceRe
                 </button>
               );
             })}
+            {!allPresets && (
+              <button type="button" onClick={() => setAllPresets(true)} className="rounded-full px-2.5 py-0.5 text-[12px] text-accent hover:underline">
+                {t.explore.morePresets(PRESETS.length - 8)}
+              </button>
+            )}
           </div>
         </div>
       )}

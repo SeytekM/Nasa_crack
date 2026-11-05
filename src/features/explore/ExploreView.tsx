@@ -1,4 +1,4 @@
-import { lazy, Suspense, useEffect, useMemo, useState } from 'react';
+import { lazy, Suspense, useCallback, useEffect, useMemo, useState } from 'react';
 import { useT } from '../../content/i18n';
 import { PRESETS } from '../../content/places';
 import { Icon } from '../../components/Icon';
@@ -65,6 +65,7 @@ export function ExploreView() {
   const [baseLayer, setBaseLayer] = useState<BaseLayer>('blueMarble');
   const [overlay, setOverlay] = useState<{ overlay: MapOverlay | null; onCell?: (i: number) => void }>({ overlay: null });
   const name = placeLabel(place);
+  const handleOverlay = useCallback((o: MapOverlay | null, onCell?: (i: number) => void) => setOverlay({ overlay: o, onCell }), []);
 
   useEffect(() => {
     void ensurePoint(place);
@@ -77,8 +78,8 @@ export function ExploreView() {
   return (
     <div className="mx-auto grid max-w-[1600px] gap-4 px-3 pb-10 sm:px-5 lg:grid-cols-[minmax(0,42fr)_minmax(0,58fr)]">
       {/* left: globe + place */}
-      <div className="space-y-3 lg:sticky lg:top-[68px] lg:self-start">
-        <div className="panel relative h-[42vh] overflow-hidden sm:h-[48vh] lg:h-[56vh]" data-tour="map">
+      <div className="lg:sticky lg:top-[68px] lg:self-start">
+        <div className="panel relative h-[42vh] overflow-hidden sm:h-[50vh] lg:h-[calc(100vh-88px)]" data-tour="map">
           <Suspense fallback={<div className="skeleton h-full rounded-none" />}>
             <GlobeMap
               center={place}
@@ -102,28 +103,6 @@ export function ExploreView() {
             ))}
           </div>
         </div>
-        <div className="panel p-4">
-          <PlacePicker key={pointKey(place)} value={place} onPick={setPlace} />
-        </div>
-        <div className="flex flex-wrap gap-2">
-          <button type="button" onClick={() => setWizardOpen(true)} className="inline-flex items-center gap-2 rounded-lg border border-line-strong bg-surface-1 px-3 py-2 hover:border-accent" data-tour="wizard-button">
-            <Icon name="spark" /> {t.explore.wizardButton}
-          </button>
-          <button
-            type="button"
-            onClick={() => setMapRegion(mapRegion ? null : 'here')}
-            aria-pressed={!!mapRegion}
-            className="inline-flex items-center gap-2 rounded-lg border border-line-strong bg-surface-1 px-3 py-2 hover:border-accent"
-            data-tour="trendmap-button"
-          >
-            <Icon name="map" /> {t.trendMap.button}
-          </button>
-        </div>
-        {mapRegion && (
-          <Suspense fallback={<div className="skeleton h-40" />}>
-            <TrendMapPanel onOverlay={(o, onCell) => setOverlay({ overlay: o, onCell })} />
-          </Suspense>
-        )}
       </div>
 
       {/* right: analysis */}
@@ -151,6 +130,29 @@ export function ExploreView() {
           </div>
         </header>
 
+        <div className="panel p-4">
+          <PlacePicker key={pointKey(place)} value={place} onPick={setPlace} />
+        </div>
+        <div className="flex flex-wrap gap-2">
+          <button type="button" onClick={() => setWizardOpen(true)} className="inline-flex items-center gap-2 rounded-lg border border-line-strong bg-surface-1 px-3 py-2 hover:border-accent" data-tour="wizard-button">
+            <Icon name="spark" /> {t.explore.wizardButton}
+          </button>
+          <button
+            type="button"
+            onClick={() => setMapRegion(mapRegion ? null : 'here')}
+            aria-pressed={!!mapRegion}
+            className="inline-flex items-center gap-2 rounded-lg border border-line-strong bg-surface-1 px-3 py-2 hover:border-accent"
+            data-tour="trendmap-button"
+          >
+            <Icon name="map" /> {t.trendMap.button}
+          </button>
+        </div>
+        {mapRegion && (
+          <Suspense fallback={<div className="skeleton h-40" />}>
+            <TrendMapPanel onOverlay={handleOverlay} />
+          </Suspense>
+        )}
+      
         <section className="panel p-4" aria-label={t.explore.variableHeading}>
           <VariablePicker value={varCode} onChange={setVar} />
         </section>

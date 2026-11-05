@@ -24,6 +24,8 @@ export interface MapOverlay {
   cells: FeatureCollection;
   /** Points for stippling significant cells */
   stipple: FeatureCollection;
+  /** [[west, south], [east, north]] to fit the view to. */
+  bounds?: [[number, number], [number, number]];
 }
 
 export type BaseLayer = 'blueMarble' | 'modis';
@@ -175,6 +177,10 @@ export default function GlobeMap({ center, zoom = 2.2, markers, onPick, overlay,
     if (!m || !ready) return;
     (m.getSource('cells') as GeoJSONSource | undefined)?.setData(overlay?.cells ?? EMPTY);
     (m.getSource('stipple') as GeoJSONSource | undefined)?.setData(overlay?.stipple ?? EMPTY);
+    if (overlay?.bounds) {
+      const reduce = window.matchMedia?.('(prefers-reduced-motion: reduce)').matches;
+      m.fitBounds(overlay.bounds, { padding: 40, duration: reduce ? 0 : 1400, maxZoom: 5.5 });
+    }
   }, [overlay, ready]);
 
   return <div ref={el} className="h-full w-full" role="application" aria-label={ariaLabel} />;

@@ -56,3 +56,15 @@ Running log of decisions made autonomously. Newest at the bottom of each phase.
 | D3.5 | MapLibre's module worker is bundled via `?worker&url` + `setWorkerUrl`. | Default relative worker lookup breaks under Vite pre-bundling. |
 | D3.6 | Heavy libraries (MapLibre ≈ 294 kB gz, ECharts ≈ 192 kB gz) and every non-default mode are lazy chunks; initial JS ≈ 100 kB gz. | First-load budget. |
 | D3.7 | Glossary tooltips are `display:none` when closed but still referenced by `aria-describedby`. | Avoids off-screen layout overflow on phones; screen readers still read the definition. |
+
+## Phase 4 — Detective Scan & Trend Map
+
+| # | Decision | Why |
+|---|---|---|
+| D4.1 | Scan verdicts use the **BH q-value**; the unadjusted verdict is shown when it differs. | SPEC §6; makes the multiple-testing lesson visible. |
+| D4.2 | Evidence board order: verdict → clean records before step-flagged ones → q → \|signal-to-noise\|. | A trend that looks like a source jump is weaker evidence even with a small p. |
+| D4.3 | Trend Map per cell: **Sen's slope + original Mann-Kendall** on annual aggregates, **Wilks (2016) FDR, α_FDR = 0.10**; significant cells stippled with a dot (not colour only). Colour scale symmetric at the 95th percentile of \|slope\|. | SPEC §4.8; robust to outliers; avoids one extreme cell washing out the map. |
+| D4.4 | Bundled regions render automatically; arbitrary regions ("around the current spot", 10° × 10°) need an explicit click (2.9 MB live request). | Offline demo + no surprise downloads. |
+| D4.5 | Scan and per-cell tests run in a Comlink Web Worker; the pure core (`workers/analysisCore.ts`) is unit-tested. | Keeps the UI responsive; testable without a browser. |
+| D4.6 | Explore layout: globe is a sticky full-height left column; all controls live in the right column. | The map overlay stays visible while reading the results. |
+| D4.7 | GIBS label layer switched to `Reference_Labels` (Level 9). | `Reference_Labels_15m` returned HTTP 500 for many tiles. |

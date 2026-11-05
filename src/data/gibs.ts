@@ -35,10 +35,11 @@ export const GIBS_LAYERS = {
     firstDate: '2000-02-24',
   },
   labels: {
-    id: 'Reference_Labels_15m',
+    // Reference_Labels_15m returned HTTP 500 for many tiles (2026-11-05); this one is reliable.
+    id: 'Reference_Labels',
     format: 'png',
-    tileMatrixSet: 'GoogleMapsCompatible_Level13',
-    maxZoom: 13,
+    tileMatrixSet: 'GoogleMapsCompatible_Level9',
+    maxZoom: 9,
     temporal: false,
   },
   coastlines: {

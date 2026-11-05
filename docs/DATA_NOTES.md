@@ -150,6 +150,7 @@ URL template (from `ResourceURL`):
 | `Reference_Labels_15m` | png | `GoogleMapsCompatible_Level13` | static |
 | `Coastlines_15m` | png | `GoogleMapsCompatible_Level13` | static |
 
+* `Reference_Labels_15m` returned **HTTP 500** for many tiles (e.g. z6/22/44) on 2026-11-05 while `Reference_Labels` (Level9) returned 200 for the same tiles → we use `Reference_Labels`.
 * Tile CORS ✅. Tile path order is `{TileMatrix}/{TileRow}/{TileCol}` = `{z}/{y}/{x}`.
 * Terra's recent Dimension values contain gaps (e.g. 2025-08-09, 2025-11-09).
 * **Time Machine** uses WMS GetMap (single image per date, CORS ✅):
