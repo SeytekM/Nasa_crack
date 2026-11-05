@@ -44,3 +44,15 @@ Running log of decisions made autonomously. Newest at the bottom of each phase.
 | D2.6 | Loader order: exact bundled preset → IndexedDB → live → bundled in same MERRA-2 cell → cached. Provenance shown in UI. | Offline-proof demo, fast repeat visits. |
 | D2.7 | All bundled data lives in `public/data/demo/` (17 points, 8 regional grids, 2 GIBS images; ≈ 9 MB). | SPEC: Case Files must not depend on Wi-Fi. |
 | D2.8 | Case-file candidates verified on real data (see `scripts/dev/summarize.ts`). Kept: Svalbard warming; Aral (images + T2M_MAX significant, mean T not yet); Central Asia snow both ways (mountains ↑, plains ↓, both warming & moistening); Bishkek warming; Issyk-Kul T2M_MIN "almost significant". East Africa precipitation is bundled for the Trend Map but its Lake Victoria decline happens largely around 1998 (ΔBIC ≈ 7), so it is presented with that caveat, not as a headline case. | Science before spectacle. |
+
+## Phase 3 — P0 UI
+
+| # | Decision | Why |
+|---|---|---|
+| D3.1 | Chart shows **anomalies by default** (toggle to raw values). | With raw monthly temperatures the ±20 °C seasonal cycle hides a 1 °C trend; anomalies make the trend visible without changing any statistic. |
+| D3.2 | Chart is in **monthly units**, trends reported in **annual units**; yearly dots = annual aggregate ÷ factor (1, 12 or 365.25) so dots and trend line share one axis (no dual axis). | Precipitation is mm/day monthly but mm/yr annually. |
+| D3.3 | The chart's zoom slider **is** the analysis period (snapped to whole years) and mirrors the From/To inputs (keyboard-accessible alternative). | "What you see is what is analysed". |
+| D3.4 | Everything shareable is in the URL hash (`#explore?lat=…&v=…&from=…`), `history.replaceState`. | Share links without a backend. |
+| D3.5 | MapLibre's module worker is bundled via `?worker&url` + `setWorkerUrl`. | Default relative worker lookup breaks under Vite pre-bundling. |
+| D3.6 | Heavy libraries (MapLibre ≈ 294 kB gz, ECharts ≈ 192 kB gz) and every non-default mode are lazy chunks; initial JS ≈ 100 kB gz. | First-load budget. |
+| D3.7 | Glossary tooltips are `display:none` when closed but still referenced by `aria-describedby`. | Avoids off-screen layout overflow on phones; screen readers still read the definition. |

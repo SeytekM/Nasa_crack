@@ -1,0 +1,259 @@
+@import 'tailwindcss';
+
+/* ---------------------------------------------------------------- tokens */
+:root {
+  color-scheme: dark;
+  --bg: #070b14;
+  --surface-1: #0d1422;
+  --surface-2: #131c2e;
+  --surface-3: #1a2539;
+  --line: #1f2a40;
+  --line-strong: #2d3a55;
+  --ink-1: #e8edf6;
+  --ink-2: #a7b2c6;
+  --ink-3: #7d89a0;
+  --accent: #5cc8ff;
+  --accent-ink: #04131f;
+  --folder: #3a2f1c;
+  --folder-ink: #f3dfb3;
+
+  --series-ma: #2a9fd8;
+  --series-annual: #a36fe0;
+  --series-trend: #d07a0a;
+  --series-raw: rgba(125, 137, 160, 0.55);
+  --series-compare: #3fb88f;
+
+  --stamp-sig: #ffb547;
+  --stamp-sug: #e9c46a;
+  --stamp-ns: #8a96ad;
+
+  --div-mid: #3a4254;
+  --shadow: 0 10px 40px rgba(0, 0, 0, 0.45);
+  --glow: 0 0 0 1px rgba(92, 200, 255, 0.35), 0 0 24px rgba(92, 200, 255, 0.25);
+}
+
+:root[data-theme='light'] {
+  color-scheme: light;
+  --bg: #f4f2ec;
+  --surface-1: #ffffff;
+  --surface-2: #f9f8f4;
+  --surface-3: #efede6;
+  --line: #dcd9cf;
+  --line-strong: #c3bfb2;
+  --ink-1: #111827;
+  --ink-2: #3f4656;
+  --ink-3: #5f6676;
+  --accent: #0b63c5;
+  --accent-ink: #ffffff;
+  --folder: #e9d9b4;
+  --folder-ink: #4a3712;
+
+  --series-ma: #1d6fd8;
+  --series-annual: #7c3aed;
+  --series-trend: #b86200;
+  --series-raw: rgba(95, 102, 118, 0.45);
+  --series-compare: #0f7a5a;
+
+  --stamp-sig: #b4540a;
+  --stamp-sug: #8a6a00;
+  --stamp-ns: #5f6676;
+
+  --div-mid: #f0efec;
+  --shadow: 0 10px 30px rgba(20, 20, 20, 0.12);
+  --glow: 0 0 0 2px rgba(11, 99, 197, 0.45), 0 0 18px rgba(11, 99, 197, 0.2);
+}
+
+@theme inline {
+  --color-bg: var(--bg);
+  --color-surface-1: var(--surface-1);
+  --color-surface-2: var(--surface-2);
+  --color-surface-3: var(--surface-3);
+  --color-line: var(--line);
+  --color-line-strong: var(--line-strong);
+  --color-ink-1: var(--ink-1);
+  --color-ink-2: var(--ink-2);
+  --color-ink-3: var(--ink-3);
+  --color-accent: var(--accent);
+  --color-accent-ink: var(--accent-ink);
+  --color-folder: var(--folder);
+  --color-folder-ink: var(--folder-ink);
+  --color-trend: var(--series-trend);
+  --color-ma: var(--series-ma);
+  --color-annual: var(--series-annual);
+  --color-stamp-sig: var(--stamp-sig);
+  --color-stamp-sug: var(--stamp-sug);
+  --color-stamp-ns: var(--stamp-ns);
+  --font-sans: 'Inter Variable', system-ui, -apple-system, 'Segoe UI', sans-serif;
+  --font-mono: 'IBM Plex Mono', ui-monospace, 'SFMono-Regular', Menlo, monospace;
+  --shadow-panel: var(--shadow);
+  --shadow-glow: var(--glow);
+}
+
+/* ---------------------------------------------------------------- base */
+html,
+body,
+#root {
+  height: 100%;
+}
+
+body {
+  margin: 0;
+  background: var(--bg);
+  color: var(--ink-1);
+  font-family: var(--font-sans);
+  font-size: 15px;
+  line-height: 1.55;
+  -webkit-font-smoothing: antialiased;
+}
+
+:root:not([data-theme='light']) body {
+  background:
+    radial-gradient(1200px 600px at 20% -10%, rgba(42, 159, 216, 0.08), transparent 60%),
+    radial-gradient(900px 500px at 110% 10%, rgba(163, 111, 224, 0.06), transparent 60%),
+    var(--bg);
+  background-attachment: fixed;
+}
+
+*:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+  border-radius: 4px;
+}
+
+::selection {
+  background: color-mix(in srgb, var(--accent) 35%, transparent);
+}
+
+.num {
+  font-family: var(--font-mono);
+  font-variant-numeric: tabular-nums;
+}
+
+.mono {
+  font-family: var(--font-mono);
+}
+
+.panel {
+  background: var(--surface-1);
+  border: 1px solid var(--line);
+  border-radius: 14px;
+}
+
+.hairline {
+  border-color: var(--line);
+}
+
+.eyebrow {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--ink-3);
+}
+
+.skeleton {
+  background: linear-gradient(90deg, var(--surface-2) 0%, var(--surface-3) 50%, var(--surface-2) 100%);
+  background-size: 200% 100%;
+  animation: shimmer 1.4s ease-in-out infinite;
+  border-radius: 8px;
+}
+
+@keyframes shimmer {
+  0% {
+    background-position: 200% 0;
+  }
+  100% {
+    background-position: -200% 0;
+  }
+}
+
+/* ---------------------------------------------------------------- stamp */
+.stamp {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5em;
+  font-family: var(--font-mono);
+  font-weight: 600;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  padding: 0.35em 0.8em;
+  border-radius: 6px;
+  transform: rotate(-4deg);
+  white-space: nowrap;
+}
+.stamp-significant {
+  color: var(--stamp-sig);
+  border: 3px double var(--stamp-sig);
+  background: color-mix(in srgb, var(--stamp-sig) 12%, transparent);
+}
+.stamp-suggestive {
+  color: var(--stamp-sug);
+  border: 2px dashed var(--stamp-sug);
+}
+.stamp-not-significant {
+  color: var(--stamp-ns);
+  border: 2px dotted var(--stamp-ns);
+}
+.stamp-insufficient {
+  color: var(--ink-3);
+  border: 1px solid var(--line-strong);
+}
+.stamp-land {
+  animation: stamp-land 260ms cubic-bezier(0.2, 1.4, 0.4, 1) both;
+}
+@keyframes stamp-land {
+  0% {
+    transform: rotate(-12deg) scale(1.6);
+    opacity: 0;
+  }
+  100% {
+    transform: rotate(-4deg) scale(1);
+    opacity: 1;
+  }
+}
+
+/* ---------------------------------------------------------------- tour highlight */
+.tour-highlight {
+  position: relative;
+  z-index: 30;
+  box-shadow: var(--glow);
+  border-radius: 14px;
+  transition: box-shadow 200ms;
+}
+
+/* ---------------------------------------------------------------- maplibre tweaks */
+.maplibregl-ctrl-attrib {
+  font-size: 10px;
+  background: color-mix(in srgb, var(--surface-1) 80%, transparent) !important;
+  color: var(--ink-2);
+}
+.maplibregl-ctrl-attrib a {
+  color: var(--ink-2);
+}
+.maplibregl-ctrl-group {
+  background: var(--surface-2) !important;
+  border: 1px solid var(--line) !important;
+}
+.maplibregl-ctrl-group button + button {
+  border-top: 1px solid var(--line) !important;
+}
+:root:not([data-theme='light']) .maplibregl-ctrl-group button span {
+  filter: invert(1) brightness(1.4);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.001ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.001ms !important;
+    scroll-behavior: auto !important;
+  }
+}
+
+@media (forced-colors: active) {
+  .stamp {
+    border: 2px solid CanvasText;
+  }
+}
