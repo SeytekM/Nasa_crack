@@ -2,7 +2,7 @@
  * MapLibre globe with NASA GIBS imagery. Lazy-loaded (MapLibre is heavy).
  */
 import { useEffect, useRef, useState } from 'react';
-import { Map as MlMap, Marker, NavigationControl, setWorkerUrl, type GeoJSONSource, type MapMouseEvent, type RasterTileSource } from 'maplibre-gl';
+import { addProtocol, Map as MlMap, Marker, NavigationControl, setWorkerUrl, type GeoJSONSource, type MapMouseEvent, type RasterTileSource } from 'maplibre-gl';
 // Vite bundles MapLibre's module worker and gives us its URL (the default
 // relative lookup breaks once the library is pre-bundled).
 import maplibreWorkerUrl from 'maplibre-gl/dist/maplibre-gl-worker.mjs?worker&url';
@@ -10,7 +10,28 @@ import type { FeatureCollection } from 'geojson';
 import 'maplibre-gl/dist/maplibre-gl.css';
 
 setWorkerUrl(maplibreWorkerUrl);
-import { GIBS_LAYERS, gibsTileUrl, recentGibsDate } from '../../data/gibs';
+
+/**
+ * "gibsfb://" = GIBS Blue Marble, network first, falling back to the bundled
+ * low-zoom tiles when offline (projector demo without Wi-Fi).
+ */
+addProtocol('gibsfb', async (params, abort) => {
+  const url = params.url.replace('gibsfb://', 'https://');
+  try {
+    const r = await fetch(url, { signal: abort.signal });
+    if (r.ok) return { data: await r.arrayBuffer() };
+    throw new Error(String(r.status));
+  } catch (err) {
+    const m = url.match(/\/(\d+)\/(\d+)\/(\d+)\.jpeg$/);
+    if (m && Number(m[1]) <= OFFLINE_TILE_MAX_ZOOM) {
+      const r = await fetch(dataUrl(`demo/tiles/bm/${m[1]}/${m[2]}/${m[3]}.jpeg`), { signal: abort.signal });
+      if (r.ok) return { data: await r.arrayBuffer() };
+    }
+    throw err;
+  }
+});
+import { GIBS_LAYERS, gibsTileUrl, OFFLINE_TILE_MAX_ZOOM, recentGibsDate } from '../../data/gibs';
+import { dataUrl } from '../../data/loader';
 
 export interface MapMarker {
   lat: number;
@@ -43,6 +64,10 @@ export interface GlobeMapProps {
   flyKey?: string;
 }
 
+function baseTiles(base: BaseLayer): string {
+  return base === 'modis' ? gibsTileUrl(GIBS_LAYERS.modisTerra, recentGibsDate()) : gibsTileUrl(GIBS_LAYERS.blueMarble).replace('https://', 'gibsfb://');
+}
+
 function style(base: BaseLayer): ConstructorParameters<typeof MlMap>[0]['style'] {
   const layer = base === 'modis' ? GIBS_LAYERS.modisTerra : GIBS_LAYERS.blueMarble;
   return {
@@ -51,7 +76,7 @@ function style(base: BaseLayer): ConstructorParameters<typeof MlMap>[0]['style']
     sources: {
       base: {
         type: 'raster',
-        tiles: [gibsTileUrl(layer, base === 'modis' ? recentGibsDate() : undefined)],
+        tiles: [baseTiles(base)],
         tileSize: 256,
         maxzoom: layer.maxZoom,
         attribution: 'Imagery: <a href="https://earthdata.nasa.gov/gibs" target="_blank" rel="noreferrer">NASA GIBS</a>',
@@ -127,7 +152,12 @@ export default function GlobeMap({ center, zoom = 2.2, markers, onPick, overlay,
       m.getCanvas().style.cursor = over ? 'pointer' : 'crosshair';
     });
     map.current = m;
+    if (import.meta.env.DEV) (window as unknown as { __etdMap?: MlMap }).__etdMap = m;
+    // MapLibre only tracks window resizes; the container can change size on its own
+    const ro = new ResizeObserver(() => m.resize());
+    ro.observe(el.current);
     return () => {
+      ro.disconnect();
       m.remove();
       map.current = null;
     };
@@ -139,8 +169,7 @@ export default function GlobeMap({ center, zoom = 2.2, markers, onPick, overlay,
     const m = map.current;
     if (!m || !ready) return;
     const src = m.getSource('base') as RasterTileSource | undefined;
-    const layer = baseLayer === 'modis' ? GIBS_LAYERS.modisTerra : GIBS_LAYERS.blueMarble;
-    src?.setTiles([gibsTileUrl(layer, baseLayer === 'modis' ? recentGibsDate() : undefined)]);
+    src?.setTiles([baseTiles(baseLayer)]);
   }, [baseLayer, ready]);
 
   // fly to the centre when the place changes
@@ -165,6 +194,7 @@ export default function GlobeMap({ center, zoom = 2.2, markers, onPick, overlay,
       node.style.cssText = `width:18px;height:18px;border-radius:50%;border:3px solid ${mk.color};background:rgba(0,0,0,.35);box-shadow:0 0 0 2px rgba(255,255,255,.85),0 0 16px ${mk.color};`;
       if (mk.label) {
         node.title = mk.label;
+        node.setAttribute('role', 'img');
         node.setAttribute('aria-label', mk.label);
       }
       return new Marker({ element: node }).setLngLat([mk.lon, mk.lat]).addTo(m);

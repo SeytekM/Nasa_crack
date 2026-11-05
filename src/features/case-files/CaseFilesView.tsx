@@ -1,4 +1,4 @@
-import { useEffect, useMemo } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { CASES, type CaseDef, type Scene } from '../../content/cases';
 import { CASE_IMAGES } from '../../content/caseImages';
 import { findPreset } from '../../content/places';
@@ -74,6 +74,7 @@ function TourCard({ def, step, side }: { def: CaseDef; step: number; side: 'left
   }, [def, points]);
   const v = (x: Verdict) => t.verdict.label[x].toUpperCase();
   const last = step === n - 1;
+  const [collapsed, setCollapsed] = useState(false);
 
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
@@ -88,7 +89,7 @@ function TourCard({ def, step, side }: { def: CaseDef; step: number; side: 'left
 
   return (
     <aside
-      className={`fixed bottom-3 left-3 right-3 z-[70] max-h-[46vh] overflow-y-auto rounded-2xl border border-line-strong bg-surface-1 p-4 shadow-panel sm:w-[440px] sm:p-5 ${side === 'right' ? 'sm:left-auto' : 'sm:right-auto'}`}
+      className={`fixed bottom-3 left-3 right-3 z-[70] rounded-2xl border border-line-strong bg-surface-1 p-4 shadow-panel sm:w-[400px] sm:p-5 ${side === 'right' ? 'sm:left-auto' : 'sm:right-auto'}`}
       aria-live="polite"
       aria-label={text.title}
     >
@@ -96,9 +97,14 @@ function TourCard({ def, step, side }: { def: CaseDef; step: number; side: 'left
         <span className="eyebrow">
           {text.title} · {t.cases.step(step + 1, n)}
         </span>
-        <button type="button" onClick={() => openCase(null)} className="text-[12px] text-ink-3 hover:text-ink-1">
-          {t.cases.exit} ✕
-        </button>
+        <span className="flex items-center gap-3">
+          <button type="button" onClick={() => setCollapsed((c) => !c)} aria-expanded={!collapsed} className="text-[12px] text-ink-3 hover:text-ink-1">
+            {collapsed ? t.cases.expand : t.cases.collapse}
+          </button>
+          <button type="button" onClick={() => openCase(null)} className="text-[12px] text-ink-3 hover:text-ink-1">
+            {t.cases.exit} ✕
+          </button>
+        </span>
       </div>
       <div className="mb-2 flex gap-1" aria-hidden="true">
         {def.steps.map((_, i) => (
@@ -106,8 +112,8 @@ function TourCard({ def, step, side }: { def: CaseDef; step: number; side: 'left
         ))}
       </div>
       <h2 className="text-lg font-semibold">{text.steps[step].title}</h2>
-      <p className="mt-1 text-[14px] leading-relaxed text-ink-2">{text.steps[step].body(facts, v)}</p>
-      {last && (
+      {!collapsed && <p className="mt-1 text-[14px] leading-relaxed text-ink-2">{text.steps[step].body(facts, v)}</p>}
+      {last && !collapsed && (
         <p className="mt-3 rounded-lg border border-[color-mix(in_srgb,var(--stamp-sig)_40%,var(--line))] p-2 text-[13px] text-ink-1">
           <span className="eyebrow mr-1">{t.cases.lesson}:</span> {text.lesson}
         </p>

@@ -5,6 +5,9 @@
 import type { BBox } from './types';
 
 export const GIBS_WMTS = 'https://gibs.earthdata.nasa.gov/wmts/epsg3857/best';
+/** Blue Marble tiles up to this zoom are bundled (public/data/demo/tiles/bm) for offline use. */
+export const OFFLINE_TILE_MAX_ZOOM = 4;
+
 export const GIBS_WMS = 'https://gibs.earthdata.nasa.gov/wms/epsg4326/best/wms.cgi';
 
 export interface GibsLayer {

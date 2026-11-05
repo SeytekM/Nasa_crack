@@ -67,8 +67,10 @@ export function PlacePicker({ value, onPick, compact = false }: { value: PlaceRe
           }}
           placeholder={t.explore.searchPlaceholder}
           className="w-full rounded-lg border border-line bg-surface-2 py-2 pl-9 pr-3 text-ink-1 placeholder:text-ink-3"
+          role="combobox"
           aria-autocomplete="list"
-          aria-controls="place-results"
+          aria-expanded={matches.length > 0 || !!coords}
+          aria-controls={matches.length > 0 || coords ? 'place-results' : undefined}
         />
         {(matches.length > 0 || coords) && (
           <ul id="place-results" role="listbox" className="absolute z-20 mt-1 w-full overflow-hidden rounded-lg border border-line-strong bg-surface-3 shadow-panel">

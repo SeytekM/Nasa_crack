@@ -11,7 +11,7 @@ import { existsSync } from 'node:fs';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { ALL_CODES } from '../src/data/catalog';
-import { gibsSnapshotUrl, GIBS_LAYERS } from '../src/data/gibs';
+import { gibsSnapshotUrl, gibsTileUrl, GIBS_LAYERS, OFFLINE_TILE_MAX_ZOOM } from '../src/data/gibs';
 import type { Manifest } from '../src/data/loader';
 import { FIRST_YEAR, fetchPointLive, fetchRegionalLive, lastCompleteYear } from '../src/data/power';
 import { CASE_IMAGES } from '../src/content/caseImages';
@@ -83,6 +83,32 @@ async function main() {
         console.log(`ok (${(buf.length / 1024).toFixed(0)} kB)`);
       }
     }
+  }
+
+  if (!only || only === 'tiles') {
+    // Blue Marble z0–OFFLINE_TILE_MAX_ZOOM so the globe is never black without Wi-Fi.
+    const jobs: [number, number, number][] = [];
+    for (let z = 0; z <= OFFLINE_TILE_MAX_ZOOM; z++) for (let y = 0; y < 2 ** z; y++) for (let x = 0; x < 2 ** z; x++) jobs.push([z, y, x]);
+    let done = 0;
+    let bytes = 0;
+    const worker = async () => {
+      for (;;) {
+        const job = jobs.shift();
+        if (!job) return;
+        const [z, y, x] = job;
+        const url = gibsTileUrl(GIBS_LAYERS.blueMarble).replace('{z}', String(z)).replace('{y}', String(y)).replace('{x}', String(x));
+        const res = await fetch(url);
+        if (!res.ok) throw new Error(`GIBS tile ${z}/${y}/${x}: ${res.status}`);
+        const buf = Buffer.from(await res.arrayBuffer());
+        const p = join(DATA, `demo/tiles/bm/${z}/${y}/${x}.jpeg`);
+        await mkdir(dirname(p), { recursive: true });
+        await writeFile(p, buf);
+        bytes += buf.length;
+        done++;
+      }
+    };
+    await Promise.all(Array.from({ length: 4 }, worker));
+    console.log(`tiles: ${done} Blue Marble tiles (${(bytes / 1048576).toFixed(1)} MB)`);
   }
 
   manifest.generatedAt = new Date().toISOString();

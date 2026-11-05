@@ -81,3 +81,14 @@ Running log of decisions made autonomously. Newest at the bottom of each phase.
 | D5.6 | Time Machine uses bundled Aral images in the case (offline) and live GIBS WMS for any place (±2° box, user-selected dates from 2000-02-24). | SPEC §4.10. |
 | D5.7 | BYOD CSV: tolerant parser (metadata lines skipped, delimiter + date/value columns detected, declared and common fill values removed, daily → monthly means, annual data supported); analysed fully client-side. Giovanni guide in Learn. | SPEC §4.13 — covers MODIS, OMI, AIRS, GPM, GLDAS without a backend. |
 | D5.8 | Fixed ECharts band stacking (`stackStrategy: 'all'`). | Default same-sign stacking broke the CI band whenever its lower edge was below 0. |
+
+## Phase 6 — polish
+
+| # | Decision | Why |
+|---|---|---|
+| D6.1 | Bundle Blue Marble tiles z0–4 (341 tiles, 3 MB) behind a `gibsfb://` MapLibre protocol: network first, bundled fallback. | The globe stayed black offline; the demo must not depend on Wi-Fi. Verified by `npm run smoke` (offline context). |
+| D6.2 | Smoke test (`scripts/smoke.cjs`) runs the production build twice: online (verdict, scan, all modes) and with every external host blocked (all 21 Case File steps, Time Machine images, offline globe). | Proves the offline promise automatically. |
+| D6.3 | axe-core WCAG 2 A/AA audit on Explore, Case Files, Compare, Learn and a tour step, dark + light: 0 violations after fixes (marker role, combobox ARIA, light-theme stamp colour #8f4300). | SPEC §7 accessibility. |
+| D6.4 | Tour card is not a scroll container (has a Minimise button instead). | `overflow-y: auto` on a fixed element over the WebGL canvas produced a black compositing artefact over the globe. |
+| D6.5 | MapLibre container observed with ResizeObserver → `map.resize()`. | MapLibre only listens to window resizes. |
+| D6.6 | Measured first load (production build, 10 Mbit/s, 150 ms RTT): FCP 0.65 s, first verdict 1.8 s; initial JS ≈ 83 kB gzip, map and chart lazy. | SPEC §7: < 3 s. |

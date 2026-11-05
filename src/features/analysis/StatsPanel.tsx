@@ -6,6 +6,7 @@ import { Term } from '../../components/Term';
 import { Icon } from '../../components/Icon';
 import { fmt, fmtP, fmtPEq, fmtSigned, withUnits } from '../../lib/format';
 import { reportNumbers, type ModelResult } from './model';
+import { useStore } from '../../state/store';
 
 function Figure({ label, value, sub }: { label: React.ReactNode; value: React.ReactNode; sub?: React.ReactNode }) {
   return (
@@ -83,6 +84,9 @@ export function StatsPanel({ m, code, info: infoIn }: { m: ModelResult; code?: V
         <Stamp verdict={tr.verdict} key={`${meta.name}-${m.period.join('-')}-${tr.verdict}`} />
       </div>
       <Headline m={m} info={meta} />
+      <p className="mt-2 text-[12px] text-ink-3">
+        <Term id="significance">{t.glossary.significance.term}</Term>: {t.verdict.explain[tr.verdict]}
+      </p>
 
       {tr.verdict !== 'insufficient' && (
         <div className="mt-4 grid grid-cols-2 gap-2 sm:grid-cols-3">
@@ -170,9 +174,21 @@ export function StatsPanel({ m, code, info: infoIn }: { m: ModelResult; code?: V
         </div>
       )}
 
-      <button type="button" className="mt-3 text-[13px] text-accent hover:underline" aria-expanded={details} onClick={() => setDetails((d) => !d)}>
-        {details ? t.common.showLess : t.common.showMore}
-      </button>
+      <div className="mt-3 flex flex-wrap gap-4 text-[13px]">
+        <button type="button" className="text-accent hover:underline" aria-expanded={details} onClick={() => setDetails((d) => !d)}>
+          {details ? t.common.showLess : t.common.showMore}
+        </button>
+        <button
+          type="button"
+          className="text-accent hover:underline"
+          onClick={() => {
+            useStore.getState().setMode('learn');
+            setTimeout(() => document.getElementById('methods')?.scrollIntoView({ block: 'start' }), 300);
+          }}
+        >
+          {t.stats.methods} →
+        </button>
+      </div>
       {details && tr.verdict !== 'insufficient' && (
         <dl className="num mt-2 grid grid-cols-[auto_1fr] gap-x-4 gap-y-1 text-[12px] text-ink-2">
           <dt>{t.stats.n}</dt>

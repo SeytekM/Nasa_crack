@@ -284,7 +284,7 @@ export const en = {
     band: '95% confidence band',
     anomalies: 'Anomalies (remove seasonal cycle)',
     anomaliesShort: 'Anomalies',
-    anomaliesSuffix: '(seasonal cycle removed)',
+    anomaliesSuffix: 'removed',
     trendBand: 'Trend + 95% band',
     zoomHint: 'Drag the handles below the chart (or use the From/To boxes) to choose a period — the statistics update instantly.',
     table: 'View as table',
@@ -411,6 +411,8 @@ export const en = {
     keys: 'Tip: use ← and → to move through the case.',
     allCases: 'All case files',
     caseNo: (n: number) => `Case #${n}`,
+    collapse: 'Minimise',
+    expand: 'Expand',
   },
   tours,
   upload: {
