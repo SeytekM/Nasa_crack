@@ -17,9 +17,23 @@ function Figure({ label, value, sub }: { label: React.ReactNode; value: React.Re
   );
 }
 
-export function Headline({ m, code }: { m: ModelResult; code: VarCode }) {
+/** What the panel needs to know about the series (catalog variable or uploaded file). */
+export interface SeriesInfo {
+  name: string;
+  annualUnits: string;
+  homogeneousFrom?: number;
+}
+
+export function useSeriesInfo(code: VarCode): SeriesInfo {
   const t = useT();
   const meta = CATALOG[code];
+  return { name: t.vars[code].name, annualUnits: meta.annualUnits, homogeneousFrom: meta.homogeneousFrom };
+}
+
+export function Headline({ m, code, info: infoIn }: { m: ModelResult; code?: VarCode; info?: SeriesInfo }) {
+  const t = useT();
+  const fallback = useSeriesInfo(code ?? 'T2M');
+  const meta = infoIn ?? fallback;
   const tr = m.analysis.trend;
   const r = reportNumbers(m);
   if (tr.warnings.includes('constant')) return <p className="text-ink-2">{t.verdict.constant}</p>;
@@ -31,7 +45,7 @@ export function Headline({ m, code }: { m: ModelResult; code: VarCode }) {
     <div className="space-y-2">
       <p className="text-[17px] font-medium leading-snug text-ink-1">
         {t.verdict.headline({
-          name: t.vars[code].name,
+          name: meta.name,
           dir: flat ? 'flat' : r.perDecade > 0 ? 'risen' : 'fallen',
           perDecade,
           since: m.period[0],
@@ -48,10 +62,11 @@ export function Headline({ m, code }: { m: ModelResult; code: VarCode }) {
   );
 }
 
-export function StatsPanel({ m, code }: { m: ModelResult; code: VarCode }) {
+export function StatsPanel({ m, code, info: infoIn }: { m: ModelResult; code?: VarCode; info?: SeriesInfo }) {
   const t = useT();
   const [details, setDetails] = useState(false);
-  const meta = CATALOG[code];
+  const fallback = useSeriesInfo(code ?? 'T2M');
+  const meta = infoIn ?? fallback;
   const tr = m.analysis.trend;
   const r = reportNumbers(m);
   const u = meta.annualUnits;
@@ -65,9 +80,9 @@ export function StatsPanel({ m, code }: { m: ModelResult; code: VarCode }) {
         <h3 id="verdict-heading" className="eyebrow">
           {t.explore.resultTitle}
         </h3>
-        <Stamp verdict={tr.verdict} key={`${code}-${m.period.join('-')}-${tr.verdict}`} />
+        <Stamp verdict={tr.verdict} key={`${meta.name}-${m.period.join('-')}-${tr.verdict}`} />
       </div>
-      <Headline m={m} code={code} />
+      <Headline m={m} info={meta} />
 
       {tr.verdict !== 'insufficient' && (
         <div className="mt-4 grid grid-cols-2 gap-2 sm:grid-cols-3">

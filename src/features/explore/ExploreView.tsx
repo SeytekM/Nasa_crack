@@ -16,6 +16,8 @@ const GlobeMap = lazy(() => import('../map/GlobeMap'));
 const Wizard = lazy(() => import('../wizard/Wizard'));
 const EvidenceBoard = lazy(() => import('../scan/EvidenceBoard'));
 const TrendMapPanel = lazy(() => import('../trend-map/TrendMapPanel'));
+const TimeMachineModal = lazy(() => import('../time-machine/TimeMachineModal'));
+const UploadModal = lazy(() => import('../upload/UploadModal'));
 
 export function placeLabel(p: PlaceRef): string {
   if (p.name) return p.name;
@@ -63,6 +65,8 @@ export function ExploreView() {
   const { place, setPlace, varCode, setVar, wizardOpen, setWizardOpen, scanOpen, setScanOpen, mapRegion, setMapRegion, ensurePoint } = useStore();
   const entry = usePointEntry(place);
   const [baseLayer, setBaseLayer] = useState<BaseLayer>('blueMarble');
+  const [tmOpen, setTmOpen] = useState(false);
+  const [uploadOpen, setUploadOpen] = useState(false);
   const [overlay, setOverlay] = useState<{ overlay: MapOverlay | null; onCell?: (i: number) => void }>({ overlay: null });
   const name = placeLabel(place);
   const handleOverlay = useCallback((o: MapOverlay | null, onCell?: (i: number) => void) => setOverlay({ overlay: o, onCell }), []);
@@ -146,6 +150,12 @@ export function ExploreView() {
           >
             <Icon name="map" /> {t.trendMap.button}
           </button>
+          <button type="button" onClick={() => setTmOpen(true)} className="inline-flex items-center gap-2 rounded-lg border border-line-strong bg-surface-1 px-3 py-2 hover:border-accent" data-tour="tm-button">
+            <Icon name="image" /> {t.timeMachine.button}
+          </button>
+          <button type="button" onClick={() => setUploadOpen(true)} className="inline-flex items-center gap-2 rounded-lg border border-line-strong bg-surface-1 px-3 py-2 hover:border-accent" data-tour="upload-button">
+            <Icon name="upload" /> {t.upload.button}
+          </button>
         </div>
         {mapRegion && (
           <Suspense fallback={<div className="skeleton h-40" />}>
@@ -167,6 +177,16 @@ export function ExploreView() {
       {wizardOpen && (
         <Suspense fallback={null}>
           <Wizard onClose={() => setWizardOpen(false)} />
+        </Suspense>
+      )}
+      {uploadOpen && (
+        <Suspense fallback={null}>
+          <UploadModal onClose={() => setUploadOpen(false)} />
+        </Suspense>
+      )}
+      {tmOpen && (
+        <Suspense fallback={null}>
+          <TimeMachineModal place={place} name={name} onClose={() => setTmOpen(false)} />
         </Suspense>
       )}
       {scanOpen && loaded && (

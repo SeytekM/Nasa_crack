@@ -68,3 +68,16 @@ Running log of decisions made autonomously. Newest at the bottom of each phase.
 | D4.5 | Scan and per-cell tests run in a Comlink Web Worker; the pure core (`workers/analysisCore.ts`) is unit-tested. | Keeps the UI responsive; testable without a browser. |
 | D4.6 | Explore layout: globe is a sticky full-height left column; all controls live in the right column. | The map overlay stays visible while reading the results. |
 | D4.7 | GIBS label layer switched to `Reference_Labels` (Level 9). | `Reference_Labels_15m` returned HTTP 500 for many tiles. |
+
+## Phase 5 — Case Files, Time Machine, Compare, Learn, BYOD
+
+| # | Decision | Why |
+|---|---|---|
+| D5.1 | Five cases: **Snow goes both ways** (home region, opposite directions), **Arctic fever**, **The vanished sea**, **Home base: Bishkek** (data artefact lesson), **Almost significant**. East Africa stays a Trend Map region only. | Each story verified on real data; each teaches one skill. |
+| D5.2 | Tour numbers are **computed at runtime** from the bundled data (`features/case-files/facts.ts`) and guarded by **story regression tests** (`content/cases.test.ts`). | Text can never drift from the charts; a re-prefetch that breaks a claim fails CI. |
+| D5.3 | "Almost significant" step 3 shows that the 1981–2010 slope (+0.44 °C/decade) is twice the full-record slope (+0.22): short windows give wobbly trends. | Honest: the original idea ("more years shrink uncertainty") was not what the data showed. |
+| D5.4 | Aral "the model can't see the lake shrink" lesson rests on the verified fact that land ET = 0 for the cell in every month; phrased as "suggests", not "proves". | We cannot inspect MERRA-2's land mask from POWER directly. |
+| D5.5 | Compare difference test: z = (b_B − b_A)/√(SE_A² + SE_B²) with AR(1)-adjusted SEs, places treated as independent (stated in the UI). | Simple, transparent; neighbouring places are not fully independent — disclosed. |
+| D5.6 | Time Machine uses bundled Aral images in the case (offline) and live GIBS WMS for any place (±2° box, user-selected dates from 2000-02-24). | SPEC §4.10. |
+| D5.7 | BYOD CSV: tolerant parser (metadata lines skipped, delimiter + date/value columns detected, declared and common fill values removed, daily → monthly means, annual data supported); analysed fully client-side. Giovanni guide in Learn. | SPEC §4.13 — covers MODIS, OMI, AIRS, GPM, GLDAS without a backend. |
+| D5.8 | Fixed ECharts band stacking (`stackStrategy: 'all'`). | Default same-sign stacking broke the CI band whenever its lower edge was below 0. |

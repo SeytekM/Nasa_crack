@@ -196,6 +196,8 @@ export default function TrendChart({ model, show, units, decimals, theme, onPeri
             type: 'line',
             data: show.trend ? model.bandLow : [],
             stack: 'band',
+            // default 'samesign' stacking breaks the band when its lower edge is negative
+            stackStrategy: 'all',
             showSymbol: false,
             lineStyle: { opacity: 0 },
             silent: true,
@@ -207,6 +209,7 @@ export default function TrendChart({ model, show, units, decimals, theme, onPeri
             type: 'line',
             data: show.trend ? delta : [],
             stack: 'band',
+            stackStrategy: 'all',
             showSymbol: false,
             lineStyle: { opacity: 0 },
             areaStyle: { color: cTrend, opacity: theme === 'light' ? 0.18 : 0.16 },

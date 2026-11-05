@@ -121,6 +121,7 @@ Definitions below are from `/api/system/manager/parameters?community=AG&temporal
 
 Notes:
 
+* `EVPTRNS` at the former Aral Sea cell (45.0 N, 59.5 E) is **0.0 in every month 1981–2025** (max 0.0), and implausibly small elsewhere (Bishkek mean 0.15 MJ/m²/day). Dropped from the catalog (DECISIONS D2.1); the Aral zero is quoted in Case File #3 as evidence that the model still treats that cell as water.
 * `EVPTRNS` exists but is an energy flux (latent heat), not mm of water. We
   label it honestly ("evapotranspiration energy").
 * Extra parameters seen working in the same call (not in the brief): `PS`,

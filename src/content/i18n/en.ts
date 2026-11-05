@@ -7,6 +7,8 @@ import type { SourceKind, Theme, VarCode } from '../../data/catalog';
 import type { Provenance } from '../../data/types';
 import type { Verdict, WarningCode } from '../../stats/analyze';
 import type { TerrainType } from '../rules';
+import { tours } from './en.tours';
+import { learnContent } from './en.learn';
 
 const pct = (p: number) => {
   if (p < 0.001) return 'less than 0.1%';
@@ -393,9 +395,49 @@ export const en = {
     placeB: 'Place B',
     pick: 'Pick on map',
     diff: 'Difference in trends (B − A)',
-    diffNote: (z: string, p: string) => `z = ${z}, p ≈ ${p} (difference of two independent slopes)`,
+    diffNote: (z: string, p: string) => `z = ${z}, ${p} — test of the difference between two slopes (autocorrelation-adjusted standard errors, places treated as independent)`,
+    opposite: 'Same variable, opposite significant trends: one place goes up while the other goes down.',
     sameAxes: 'Both charts share the same axes.',
     swap: 'Swap',
+  },
+  cases: {
+    title: 'Case Files',
+    intro: 'Five short investigations with real NASA data. Each one teaches one detective skill.',
+    open: 'Open case',
+    step: (i: number, n: number) => `Step ${i} of ${n}`,
+    exit: 'Close case',
+    lesson: 'Lesson',
+    finish: 'Case closed',
+    keys: 'Tip: use ← and → to move through the case.',
+    allCases: 'All case files',
+    caseNo: (n: number) => `Case #${n}`,
+  },
+  tours,
+  upload: {
+    button: 'Bring your own data',
+    title: 'Bring your own data (CSV)',
+    intro: 'Analyse any time series — e.g. an area-averaged series exported from NASA Giovanni (MODIS, OMI, AIRS, GPM IMERG, GLDAS) or a CUAHSI HydroShare / Data Rods download. The file never leaves your browser.',
+    drop: 'Drop a CSV file here, or click to choose one',
+    formats: 'Any CSV/TSV with a date column (2001-01-01, 2001-01, 200101 or 2001) and a numeric column. Header and comment lines are skipped; fill values such as −9999 are removed; daily data are averaged to months.',
+    summary: (dateCol: string, valueCol: string, used: number, skipped: number, res: string, from: number, to: number) =>
+      `Date column “${dateCol}”, value column “${valueCol}” · ${used} values used, ${skipped} lines skipped · ${res} data, ${from}–${to}`,
+    units: 'Units',
+    agg: 'Yearly value =',
+    aggMean: 'mean of months',
+    aggSum: 'sum of months',
+    genericError: 'This file could not be read as a time series.',
+    annualNote: 'Yearly data: monthly anomalies and the seasonal test are not meaningful and are based on repeated yearly values.',
+  },
+  timeMachine: {
+    title: 'Time Machine',
+    button: 'Time Machine',
+    before: 'Before',
+    after: 'After',
+    slider: 'Swipe',
+    tip: 'Pick two dates in the same season with few clouds. MODIS Terra imagery exists from 24 Feb 2000; some days have gaps or clouds.',
+    alt: (date: string) => `MODIS Terra true-colour satellite image of the area on ${date}`,
+    failed: 'Image could not be loaded (no imagery for this date, or you are offline).',
+    credit: 'Imagery: NASA GIBS — MODIS Terra Corrected Reflectance (True Color).',
   },
   learn: {
     title: 'Learn',
@@ -405,7 +447,11 @@ export const en = {
     methodsTitle: 'Methods (for the curious)',
     giovanniTitle: 'Bring your own data from NASA Giovanni',
     referencesTitle: 'References',
+    assumptionsTitle: 'Assumptions & limitations',
+    searchGlossary: 'Search terms…',
+    tryCase: 'See it in action: open Case #1',
   },
+  learnContent,
   export: {
     title: 'Export & share',
     csvSeries: 'Series (CSV)',
