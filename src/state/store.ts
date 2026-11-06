@@ -6,6 +6,7 @@ import type { Loaded, PointDataset } from '../data/types';
 import type { AnalysisBasis } from '../stats/analyze';
 import { buildHash, parseHash, type Mode, type PlaceRef, type UrlState } from './url';
 import { PRESETS } from '../content/places';
+import { BUILDING_TYPES, type BuildingType } from '../content/siteRules';
 
 export type Theme = 'dark' | 'light';
 
@@ -40,6 +41,12 @@ export interface AppState {
   caseId: string | null;
   caseStep: number;
   points: Record<string, PointEntry>;
+  /** Site check panel: null = closed */
+  siteType: BuildingType | null;
+  /** Polygon ring [lon, lat] (open ring) */
+  siteRing: [number, number][];
+  siteClosed: boolean;
+  siteDrawing: boolean;
 
   setMode: (m: Mode) => void;
   setTheme: (t: Theme) => void;
@@ -58,6 +65,9 @@ export interface AppState {
   setCaseStep: (s: number) => void;
   applyUrl: (u: UrlState) => void;
   ensurePoint: (p: PlaceRef, opts?: { force?: boolean }) => Promise<void>;
+  setSiteType: (t: BuildingType | null) => void;
+  setSiteRing: (ring: [number, number][], closed: boolean) => void;
+  setSiteDrawing: (d: boolean) => void;
 }
 
 export const END_YEAR = lastCompleteYear();
@@ -94,6 +104,10 @@ export const useStore = create<AppState>((set, get) => ({
   caseId: null,
   caseStep: 0,
   points: {},
+  siteType: null,
+  siteRing: [],
+  siteClosed: false,
+  siteDrawing: false,
 
   setMode: (mode) => set({ mode }),
   setTheme: (theme) => {
@@ -131,7 +145,14 @@ export const useStore = create<AppState>((set, get) => ({
       caseStep: u.caseStep ?? 0,
       scanOpen: u.scan ?? false,
       mapRegion: u.map ?? null,
+      siteType: u.site && (BUILDING_TYPES as string[]).includes(u.site) ? (u.site as BuildingType) : null,
+      siteRing: u.poly ?? (u.site ? s.siteRing : []),
+      siteClosed: u.poly ? true : u.site ? s.siteClosed : false,
+      siteDrawing: false,
     })),
+  setSiteType: (siteType) => set(siteType ? { siteType } : { siteType: null, siteDrawing: false }),
+  setSiteRing: (siteRing, siteClosed) => set({ siteRing, siteClosed }),
+  setSiteDrawing: (siteDrawing) => set({ siteDrawing }),
   ensurePoint: async (p, opts = {}) => {
     const key = pointKey(p);
     const existing = get().points[key];
@@ -172,6 +193,8 @@ export function toUrlState(s: AppState): UrlState {
     caseStep: s.caseStep,
     scan: s.scanOpen,
     map: s.mapRegion ?? undefined,
+    site: s.siteType ?? undefined,
+    poly: s.siteType && s.siteClosed ? s.siteRing : undefined,
   };
 }
 

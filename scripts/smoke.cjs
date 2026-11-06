@@ -53,6 +53,11 @@ const check = (cond, msg) => {
     await page.waitForSelector('text=/significant · .* suggestive/', { timeout: 20000 });
     check(true, 'Detective Scan finishes in the web worker');
     await page.keyboard.press('Escape');
+    await page.goto(`${BASE}#explore?lat=42.87&lon=74.59&site=hospital`);
+    await page.waitForSelector('[data-tour="site-panel"]', { timeout: 20000 });
+    await page.getByRole('button', { name: /20 × 20 km square/ }).click();
+    await page.waitForSelector('text=/\\(\\d+ \\/ 100\\)/', { timeout: 20000 });
+    check(true, 'Site check scores a 20 × 20 km square around Bishkek');
     for (const mode of ['cases', 'compare', 'learn']) {
       await page.goto(`${BASE}#${mode}`);
       await page.waitForTimeout(1500);

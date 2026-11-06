@@ -92,3 +92,15 @@ Running log of decisions made autonomously. Newest at the bottom of each phase.
 | D6.4 | Tour card is not a scroll container (has a Minimise button instead). | `overflow-y: auto` on a fixed element over the WebGL canvas produced a black compositing artefact over the globe. |
 | D6.5 | MapLibre container observed with ResizeObserver → `map.resize()`. | MapLibre only listens to window resizes. |
 | D6.6 | Measured first load (production build, 10 Mbit/s, 150 ms RTT): FCP 0.65 s, first verdict 1.8 s; initial JS ≈ 83 kB gzip, map and chart lazy. | SPEC §7: < 3 s. |
+
+## Feature — Site check (climate suitability score, requested after submission)
+
+| # | Decision | Why |
+|---|---|---|
+| D8.1 | The 0–100 score is explicitly a **climate** suitability screening; the panel always lists what is NOT included (earthquakes first, then slope, flood zones, mudflows, soils, roads, population, zoning). | Our data are NASA POWER climate fields on ~50 km cells. Pretending to assess building siting would mislead — and in Central Asia seismic hazard dominates siting. |
+| D8.2 | Polygon → sample the centroid + every MERRA-2 cell centre inside it (max 6 point requests); statistics averaged, ranges shown. Polygons > 10° across are refused; areas smaller than a grid cell get a resolution note. | Same data path as Explore (bundled/cached/live); honest about resolution. |
+| D8.3 | Factors from the last 30 complete years: hottest/coldest hour of the year, max monthly dew point, frost days, wettest month, topsoil wetness, annual precipitation, deepest monthly snow, mean 10 m wind, all-sky sunlight (2001 → only), plus significant 1981 → trends of the hottest hour and of rainfall. | Each maps to a concrete building concern (heat stress, heating, flooding, water supply, roof load, wind load, solar yield, growing risk). |
+| D8.4 | Sub-scores via linear ramps with documented thresholds (`src/content/siteRules.ts`), weights per building type (hospital, school, housing, warehouse, solar plant). Rules are plain data, easy to change. | Transparent and debatable — better than a black box. |
+| D8.5 | Total = **weighted geometric mean** (floor 5), not arithmetic. | With an arithmetic mean Yakutsk (coldest hour −53 °C) scored 79 for a hospital and Delhi (hottest hour 47 °C) 73; a single critical factor must not be averaged away (same idea as the UN HDI). Now Yakutsk 63, Delhi 50, Madrid 84. |
+| D8.6 | Rainfall-trend penalty ignored where annual precipitation < 150 mm. | A +20 %/decade change of almost nothing is meaningless (Sahara). |
+| D8.7 | Building type and polygon are stored in the share link (`site=…&poly=lat,lon;…`). | Same as every other view. |

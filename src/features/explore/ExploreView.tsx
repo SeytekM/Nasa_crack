@@ -17,6 +17,7 @@ const Wizard = lazy(() => import('../wizard/Wizard'));
 const EvidenceBoard = lazy(() => import('../scan/EvidenceBoard'));
 const TrendMapPanel = lazy(() => import('../trend-map/TrendMapPanel'));
 const TimeMachineModal = lazy(() => import('../time-machine/TimeMachineModal'));
+const SiteScorePanel = lazy(() => import('../site-score/SiteScorePanel'));
 const UploadModal = lazy(() => import('../upload/UploadModal'));
 
 export function placeLabel(p: PlaceRef): string {
@@ -62,7 +63,8 @@ export function ErrorState({ message, onRetry }: { message?: string; onRetry: ()
 
 export function ExploreView() {
   const t = useT();
-  const { place, setPlace, varCode, setVar, wizardOpen, setWizardOpen, scanOpen, setScanOpen, mapRegion, setMapRegion, ensurePoint } = useStore();
+  const { place, setPlace, varCode, setVar, wizardOpen, setWizardOpen, scanOpen, setScanOpen, mapRegion, setMapRegion, ensurePoint, siteType, setSiteType, siteRing, siteClosed, siteDrawing, setSiteRing, setSiteDrawing } = useStore();
+  const siteShape = useMemo(() => (siteType && siteRing.length ? { ring: siteRing, closed: siteClosed } : null), [siteType, siteRing, siteClosed]);
   const entry = usePointEntry(place);
   const [baseLayer, setBaseLayer] = useState<BaseLayer>('blueMarble');
   const [tmOpen, setTmOpen] = useState(false);
@@ -94,6 +96,13 @@ export function ExploreView() {
               baseLayer={baseLayer}
               ariaLabel={t.explore.clickMap}
               flyKey={pointKey(place)}
+              shape={siteShape}
+              drawing={!!siteType && siteDrawing}
+              onDrawClick={(lat, lon) => setSiteRing([...siteRing, [Math.round(lon * 1e4) / 1e4, Math.round(lat * 1e4) / 1e4]], false)}
+              onDrawFinish={() => {
+                setSiteRing(siteRing, true);
+                setSiteDrawing(false);
+              }}
             />
           </Suspense>
           <div className="pointer-events-none absolute left-3 top-3 max-w-[70%] rounded-lg bg-[color-mix(in_srgb,var(--surface-1)_82%,transparent)] px-3 py-1.5 text-[12px] text-ink-2 backdrop-blur">
@@ -153,10 +162,24 @@ export function ExploreView() {
           <button type="button" onClick={() => setTmOpen(true)} className="inline-flex items-center gap-2 rounded-lg border border-line-strong bg-surface-1 px-3 py-2 hover:border-accent" data-tour="tm-button">
             <Icon name="image" /> {t.timeMachine.button}
           </button>
+          <button
+            type="button"
+            onClick={() => setSiteType(siteType ? null : 'hospital')}
+            aria-pressed={!!siteType}
+            className="inline-flex items-center gap-2 rounded-lg border border-line-strong bg-surface-1 px-3 py-2 hover:border-accent"
+            data-tour="site-button"
+          >
+            <Icon name="pin" /> {t.site.button}
+          </button>
           <button type="button" onClick={() => setUploadOpen(true)} className="inline-flex items-center gap-2 rounded-lg border border-line-strong bg-surface-1 px-3 py-2 hover:border-accent" data-tour="upload-button">
             <Icon name="upload" /> {t.upload.button}
           </button>
         </div>
+        {siteType && (
+          <Suspense fallback={<div className="skeleton h-40" />}>
+            <SiteScorePanel />
+          </Suspense>
+        )}
         {mapRegion && (
           <Suspense fallback={<div className="skeleton h-40" />}>
             <TrendMapPanel onOverlay={handleOverlay} />

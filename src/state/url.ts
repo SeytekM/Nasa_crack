@@ -29,6 +29,9 @@ export interface UrlState {
   caseStep?: number;
   scan?: boolean;
   map?: string;
+  /** Site check: building type and polygon ([lon, lat] ring) */
+  site?: string;
+  poly?: [number, number][];
 }
 
 const num = (s: string | null): number | undefined => {
@@ -74,6 +77,17 @@ export function parseHash(hash: string): UrlState {
   if (q.get('scan') === '1') s.scan = true;
   const map = q.get('map');
   if (map) s.map = map;
+  const site = q.get('site');
+  if (site) s.site = site;
+  const poly = q.get('poly');
+  if (poly) {
+    const ring = poly
+      .split(';')
+      .map((pair) => pair.split(',').map(Number))
+      .filter((p) => p.length === 2 && Math.abs(p[0]) <= 90 && Math.abs(p[1]) <= 180)
+      .map(([lat, lon]) => [lon, lat] as [number, number]);
+    if (ring.length >= 3) s.poly = ring;
+  }
   return s;
 }
 
@@ -106,6 +120,8 @@ export function buildHash(s: UrlState): string {
     if (s.anomalies === false) q.set('anom', '0');
     if (s.mode === 'explore' && s.scan) q.set('scan', '1');
     if (s.mode === 'explore' && s.map) q.set('map', s.map);
+    if (s.mode === 'explore' && s.site) q.set('site', s.site);
+    if (s.mode === 'explore' && s.poly && s.poly.length >= 3) q.set('poly', s.poly.map(([lon, lat]) => `${r4(lat)},${r4(lon)}`).join(';'));
   }
   const qs = q.toString();
   return `#${s.mode}${qs ? `?${qs}` : ''}`;

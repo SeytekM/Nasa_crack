@@ -9,6 +9,7 @@ import type { Verdict, WarningCode } from '../../stats/analyze';
 import type { TerrainType } from '../rules';
 import { tours } from './en.tours';
 import { learnContent } from './en.learn';
+import type { BuildingType, FactorId } from '../siteRules';
 
 const pct = (p: number) => {
   if (p < 0.001) return 'less than 0.1%';
@@ -429,6 +430,79 @@ export const en = {
     aggSum: 'sum of months',
     genericError: 'This file could not be read as a time series.',
     annualNote: 'Yearly data: monthly anomalies and the seasonal test are not meaningful and are based on repeated yearly values.',
+  },
+  site: {
+    button: 'Site check',
+    title: 'Site check — is the climate right for this building?',
+    intro: 'Draw an area on the globe and choose what you want to build. We score the local climate from 0 to 100 using 30 years of NASA POWER data.',
+    typeLabel: 'Building',
+    types: {
+      hospital: 'Hospital',
+      school: 'School',
+      housing: 'Housing',
+      warehouse: 'Warehouse',
+      solar: 'Solar power plant',
+    } satisfies Record<BuildingType, string>,
+    draw: 'Draw area on the globe',
+    redraw: 'Redraw area',
+    drawing: (n: number) => `Click on the globe to add corners (${n} so far). Click the orange first point or press Finish.`,
+    zoomTip: 'Tip: zoom in first (+ button or scroll) to draw a town-sized area.',
+    finish: 'Finish',
+    undo: 'Undo point',
+    cancel: 'Cancel',
+    clear: 'Clear',
+    useSquare: 'Use a 20 × 20 km square around the current place',
+    areaInfo: (km2: string, cells: number) => `Area ≈ ${km2} km² · ${cells} NASA grid cell${cells === 1 ? '' : 's'} sampled (each ~50 km)`,
+    smallArea: 'Your area is smaller than one NASA grid cell: the score describes the climate of the surrounding ~50 km, not this exact plot.',
+    tooBig: 'This area is more than 10° across. Draw a smaller area — one climate score for a whole country is meaningless.',
+    evaluate: 'Score this site',
+    evaluating: (done: number, total: number) => `Fetching 45 years of NASA data: ${done} of ${total} grid cells…`,
+    scoreFor: (type: string) => `Climate suitability for a ${type.toLowerCase()}`,
+    outOf: '/ 100',
+    bands: {
+      favourable: 'Favourable climate',
+      good: 'Good, with precautions',
+      challenging: 'Challenging climate',
+      'high-risk': 'High climate risk',
+    },
+    concerns: 'Main climate concerns',
+    strengths: 'Climate strengths',
+    noConcerns: 'No major climate concern for this type of building.',
+    breakdown: 'Score breakdown',
+    weight: (w: number) => `weight ${w}%`,
+    factors: {
+      heat: { name: 'Heat stress', why: 'Hot hours and humid heat stress patients, children and cooling systems.' },
+      cold: { name: 'Cold & frost', why: 'Deep cold and many frost days mean heating costs, frozen pipes and icy access.' },
+      rain: { name: 'Heavy rain & wet ground', why: 'Very wet months and waterlogged soil raise flooding and foundation risks.' },
+      water: { name: 'Water availability', why: 'Low rainfall means the site depends on wells, rivers or pipelines.' },
+      snow: { name: 'Snow load & access', why: 'Deep snow loads roofs and can cut road access.' },
+      wind: { name: 'Wind exposure', why: 'Strong average winds load roofs, facades and panels.' },
+      solar: { name: 'Sunshine', why: 'More sunlight → more solar power and daylight (and more cooling demand).' },
+      trend: { name: 'Climate trend', why: 'Significant warming of the hottest hours or big rainfall changes since 1981 suggest growing risk.' },
+    } satisfies Record<FactorId, { name: string; why: string }>,
+    detail: {
+      heat: (hot: string, dew: string) => `Hottest hour of the year ≈ ${hot} °C · most humid month dew point ≈ ${dew} °C`,
+      cold: (cold: string, frost: string) => `Coldest hour of the year ≈ ${cold} °C · ${frost} frost days per year`,
+      rain: (wet: string, soil: string) => `Wettest month ≈ ${wet} mm/day · topsoil wetness ${soil} (0 dry – 1 saturated)`,
+      water: (mm: string) => `${mm} mm of rain and snow per year`,
+      snow: (cm: string) => `Deepest monthly snow ≈ ${cm} cm`,
+      wind: (ms: string) => `Mean wind ≈ ${ms} m/s at 10 m`,
+      solar: (kwh: string) => `${kwh} kWh/m² of sunlight per day (2001 →)`,
+      trend: (heat: string, heatSig: boolean, pr: string, prSig: boolean) =>
+        `Hottest hour ${heat} °C per decade (${heatSig ? 'significant' : 'not significant'}) · rainfall ${pr} % per decade (${prSig ? 'significant' : 'not significant'})`,
+    },
+    varies: 'Across the area:',
+    caveatTitle: 'Climate screening only — not a siting study',
+    caveats: [
+      'Earthquake hazard is NOT included — in seismic regions such as Central Asia it can matter more than everything above. Check national seismic zoning maps.',
+      'Not included: slope and terrain, river flood zones and mudflows, landslides, soil bearing capacity, air quality.',
+      'Not included: roads, population and demand, distance to existing hospitals or schools, land ownership, zoning rules.',
+      'NASA POWER data describe ~50 km grid cells (MERRA-2 reanalysis and satellite estimates), not individual plots.',
+      'Thresholds and weights are transparent rules of thumb (see Learn → Methods), not engineering standards.',
+    ],
+    method:
+      'Each factor turns a 30-year climate statistic into a 0–100 sub-score with a simple ramp (e.g. hottest hour ≤ 32 °C → 100, ≥ 45 °C → 0). Sub-scores are combined with weights for the building type using a weighted geometric mean, so one very poor factor cannot be hidden by good ones.',
+    error: 'Could not load NASA data for this area. Check your connection and try again — offline, only the bundled demo places work.',
   },
   timeMachine: {
     title: 'Time Machine',

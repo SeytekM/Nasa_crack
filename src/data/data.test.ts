@@ -133,3 +133,18 @@ describe('request queue', () => {
     expect(m).toBe(1);
   });
 });
+
+describe('site-check share link', () => {
+  it('round-trips building type and polygon through the URL hash', async () => {
+    const { buildHash, parseHash } = await import('../state/url');
+    const poly: [number, number][] = [
+      [74.5, 42.8],
+      [74.7, 42.8],
+      [74.7, 43.0],
+    ];
+    const h = buildHash({ mode: 'explore', place: { lat: 42.87, lon: 74.59 }, site: 'school', poly });
+    const back = parseHash(h);
+    expect(back.site).toBe('school');
+    expect(back.poly).toEqual(poly);
+  });
+});

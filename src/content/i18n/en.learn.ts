@@ -72,6 +72,11 @@ export const learnContent = {
       body: 'We compare a straight line (2 parameters) with “one sudden jump” (two means + break year, 3 parameters) using the Bayesian Information Criterion. If the jump model wins by more than 10 BIC points, the record is flagged: such jumps often come from changes in instruments or data sources.',
       formula: 'ΔBIC = BIC_line − BIC_jump > 10',
     },
+    {
+      title: 'Site check (climate suitability score)',
+      body: 'Draw an area and pick a building type. For every NASA grid cell inside the area (max 6) we compute 30-year statistics: hottest and coldest hour of the year, most humid month, frost days, wettest month, topsoil wetness, annual rain, deepest snow, mean wind, sunlight, plus 1981-present trends of the hottest hour and of rainfall. Each statistic becomes a 0–100 sub-score through a simple ramp (rules in src/content/siteRules.ts). The total is a weighted geometric mean with weights per building type (e.g. heat 25 % for hospitals, sunshine 50 % for solar plants). It is a climate screening only: earthquakes, slopes, flood zones, soils, roads and population are not included.',
+      formula: 'score = 100 · exp( Σ wᵢ · ln(max(5, sᵢ)/100) )',
+    },
   ],
   assumptions: [
     'Linearity: the straight line is a summary of the change, not a claim that change is perfectly steady.',

@@ -29,6 +29,7 @@ students and anyone with basic science background.
 | **Case Files** | Five guided investigations with real data (all numbers computed live): *Snow goes both ways* (Tian Shan), *Arctic fever* (Svalbard), *The vanished sea* (Aral), *Home base: Bishkek* (a data artefact), *Almost significant* (Issyk-Kul). |
 | **Time Machine** | Before/after curtain between two MODIS Terra images (GIBS), e.g. the Aral Sea in Aug 2000 vs Aug 2025. |
 | **Compare** | Two places, one variable, shared axes, test of the difference between slopes. |
+| **Site check** | Draw an area on the globe, choose a building type (hospital, school, housing, warehouse, solar plant) and get a **0–100 climate suitability score** with a factor-by-factor breakdown (heat, cold, heavy rain, water, snow, wind, sunshine, trends). Clearly a *climate screening*: earthquakes, terrain, flood zones, roads and population are not included and the panel says so. |
 | **Bring your own data** | Drop a CSV (e.g. a NASA Giovanni area-averaged export of MODIS, OMI, AIRS, GPM IMERG, GLDAS) — same analysis, nothing leaves the browser. |
 | **Learn** | How it works, glossary, formulas, assumptions & limitations, references, Giovanni how-to. |
 
