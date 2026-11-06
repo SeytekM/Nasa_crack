@@ -45,3 +45,6 @@ jobs:
     steps:
       - id: deployment
         uses: actions/deploy-pages@v4
+        with:
+          # GitHub Pages sometimes takes >10 min to accept a deployment (default timeout)
+          timeout: 1200000
