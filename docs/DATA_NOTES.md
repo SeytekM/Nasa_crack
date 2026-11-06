@@ -180,3 +180,13 @@ labels it `cached`.
   Earth Science Data and Information System (ESDIS)."* *(earthdata.nasa.gov is
   not reachable from the build container, so this text is from the GIBS
   documentation as remembered — re-check before submission.)*
+
+## 8. Ground layers for the Site check (verified 2026-11-06)
+
+| GIBS layer (WMS EPSG:4326, PNG) | Resolution | Colormap | Decoding check |
+|---|---|---|---|
+| `MODIS_Water_Mask` | 250 m | 1 colour (168,248,255) = water, land transparent | Issyk-Kul 99.99 % water, Atlantic 100 %, Bishkek ~1 % |
+| `ASTER_GDEM_Color_Index` | 31.25 m | 255 colours, bins 5 m (<100 m), 10 m (<750 m), 25 m (<~3000 m), 50–200 m above; sea = transparent | 100 % of pixels matched; Bishkek ≈ 690 m, Issyk-Kul surface 1625 m, Tian Shan ≈ 4000–4150 m |
+| `NDH_Landslide_Hazard_Distribution_2000` | 1 km | 8 classes (Negligible … Very High), water = no data | 100 % matched |
+
+All three return `access-control-allow-origin: *`, so pixels can be read in a canvas. Colormaps: `https://gibs.earthdata.nasa.gov/colormaps/v1.0/<Layer>.xml` (copies in `scripts/colormaps/`).

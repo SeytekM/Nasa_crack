@@ -4,11 +4,12 @@ import { loadPoint } from '../../data/loader';
 import { FIRST_YEAR } from '../../data/power';
 import type { Provenance } from '../../data/types';
 import { useT } from '../../content/i18n';
-import { BUILDING_TYPES, FACTORS, WEIGHTS, type FactorId } from '../../content/siteRules';
+import { BUILDING_TYPES, CLIMATE_FACTORS, TERRAIN_FACTORS, type FactorId } from '../../content/siteRules';
 import { Icon } from '../../components/Icon';
 import { fmt, fmtSigned } from '../../lib/format';
 import { END_YEAR, useStore } from '../../state/store';
-import { areaKm2, bboxOf, climateStats, combineStats, samplePoints, scoreSite, trendInfo, type ClimateStats, type TrendInfo } from './siteScore';
+import { areaKm2, bboxOf, blockReason, climateStats, combineStats, samplePoints, scoreSite, trendInfo, type ClimateStats, type TrendInfo } from './siteScore';
+import { fetchTerrain, type TerrainStats } from './terrain';
 
 type Combined = ReturnType<typeof combineStats>;
 
@@ -19,11 +20,13 @@ interface EvalState {
   stats?: Combined;
   trend?: TrendInfo;
   provenance?: Provenance[];
+  /** null = ground maps could not be read */
+  terrain?: TerrainStats | null;
   error?: string;
 }
 
 /** Circular 0–100 gauge; the number and the band text carry the meaning, not colour. */
-function Gauge({ value }: { value: number }) {
+function Gauge({ value, unknown = false }: { value: number; unknown?: boolean }) {
   const r = 52;
   const c = 2 * Math.PI * r;
   return (
@@ -37,19 +40,27 @@ function Gauge({ value }: { value: number }) {
         stroke="var(--accent)"
         strokeWidth="12"
         strokeLinecap="round"
-        strokeDasharray={`${(c * value) / 100} ${c}`}
+        strokeDasharray={`${unknown ? 0 : (c * value) / 100} ${c}`}
         transform="rotate(-90 66 66)"
       />
       <text x="66" y="74" textAnchor="middle" className="num" fontSize="34" fontWeight="600" fill="var(--ink-1)">
-        {value}
+        {unknown ? '?' : value}
       </text>
     </svg>
   );
 }
 
-function detailLine(f: FactorId, s: ClimateStats, tr: TrendInfo, t: ReturnType<typeof useT>): string {
+function detailLine(f: FactorId, s: ClimateStats, tr: TrendInfo, g: TerrainStats | null | undefined, t: ReturnType<typeof useT>): string {
   const d = t.site.detail;
   switch (f) {
+    case 'land':
+      return d.land(fmt((g?.waterFraction ?? NaN) * 100, 0));
+    case 'slope':
+      return d.slope(fmt((g?.gentleFraction ?? NaN) * 100, 0), fmt(g?.slopeMedian ?? NaN, 1), fmt(g?.resolutionM ?? NaN, 0));
+    case 'altitude':
+      return d.altitude(fmt(g?.elevMean ?? NaN, 0), fmt(g?.elevMax ?? NaN, 0));
+    case 'landslide':
+      return d.landslide(fmt((g?.landslideHigh ?? NaN) * 100, 0));
     case 'heat':
       return d.heat(fmt(s.hottestHour, 1), fmt(s.maxDewPoint, 1));
     case 'cold':
@@ -88,21 +99,29 @@ export default function SiteScorePanel() {
 
   const evaluate = async () => {
     setEv({ status: 'loading', done: 0, total: samples.length });
-    try {
-      let done = 0;
-      const loaded = await Promise.all(
-        samples.map(async ([lon, lat]) => {
-          const l = await loadPoint({ lat, lon, params: ALL_CODES, start: FIRST_YEAR, end: END_YEAR });
-          done++;
-          setEv((e) => ({ ...e, done }));
-          return l;
-        }),
-      );
-      const stats = combineStats(loaded.map((l) => climateStats(l.data)));
-      setEv({ status: 'ready', stats, trend: trendInfo(loaded[0].data), provenance: [...new Set(loaded.map((l) => l.provenance))] });
-    } catch (e) {
-      setEv({ status: 'error', error: e instanceof Error ? e.message : String(e) });
+    let done = 0;
+    const climateJob = Promise.all(
+      samples.map(async ([lon, lat]) => {
+        const l = await loadPoint({ lat, lon, params: ALL_CODES, start: FIRST_YEAR, end: END_YEAR });
+        done++;
+        setEv((e) => ({ ...e, done }));
+        return l;
+      }),
+    );
+    const terrainJob = fetchTerrain(siteRing, bboxOf(siteRing)).catch(() => null);
+    const [climate, terrain] = await Promise.all([climateJob.then((v) => ({ ok: true as const, v }), (e: unknown) => ({ ok: false as const, e })), terrainJob]);
+    if (!climate.ok) {
+      // over open sea the climate request may fail — the ground maps still give a verdict
+      if (terrain && blockReason(terrain)) {
+        setEv({ status: 'ready', terrain });
+        return;
+      }
+      setEv({ status: 'error', error: climate.e instanceof Error ? climate.e.message : String(climate.e) });
+      return;
     }
+    const loaded = climate.v;
+    const stats = combineStats(loaded.map((l) => climateStats(l.data)));
+    setEv({ status: 'ready', stats, trend: trendInfo(loaded[0].data), provenance: [...new Set(loaded.map((l) => l.provenance))], terrain });
   };
 
   // (re)evaluate whenever a new closed polygon appears
@@ -113,7 +132,17 @@ export default function SiteScorePanel() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [ringKey]);
 
-  const result = ev.status === 'ready' && ev.stats && ev.trend ? scoreSite(ev.stats.mean, ev.trend, type) : null;
+  const result = ev.status === 'ready' && ev.stats && ev.trend ? scoreSite(ev.stats.mean, ev.trend, type, ev.terrain) : null;
+  // ground-only verdict (e.g. open ocean where climate data are unavailable)
+  const groundOnlyBlock = ev.status === 'ready' && !ev.stats && ev.terrain ? blockReason(ev.terrain) : null;
+  const blocked = result?.blocked ?? groundOnlyBlock;
+  const blockedText = (() => {
+    const g = ev.terrain;
+    if (!blocked || !g) return null;
+    if (blocked === 'water') return t.site.blocked.water(fmt(g.waterFraction * 100, 0));
+    if (blocked === 'steep') return t.site.blocked.steep(fmt(g.gentleFraction * 100, 0));
+    return t.site.blocked.altitude(fmt(g.elevMean, 0));
+  })();
 
   const startDrawing = () => {
     setSiteRing([], false);
@@ -227,6 +256,7 @@ export default function SiteScorePanel() {
       {ev.status === 'loading' && (
         <div aria-busy="true" className="space-y-2">
           <p className="text-[13px] text-ink-2">{t.site.evaluating(ev.done ?? 0, ev.total ?? 0)}</p>
+          <p className="text-[12px] text-ink-3">{t.site.groundLoading}</p>
           <div className="skeleton h-32" />
         </div>
       )}
@@ -240,15 +270,44 @@ export default function SiteScorePanel() {
         </div>
       )}
 
+      {groundOnlyBlock && (
+        <div role="alert" className="flex items-center gap-4 rounded-xl border-2 border-stamp-sug p-3">
+          <Gauge value={0} />
+          <div>
+            <div className="text-lg font-semibold text-ink-1">{t.site.blockedBand}</div>
+            <p className="text-[14px] text-ink-2">{blockedText}</p>
+          </div>
+        </div>
+      )}
+
       {result && ev.stats && ev.trend && (
         <div className="space-y-4" aria-live="polite">
           <div className="flex flex-wrap items-center gap-4 rounded-xl border border-line bg-surface-2 p-3">
-            <Gauge value={result.total} />
+            <Gauge value={result.total} unknown={result.incomplete && !blocked} />
             <div className="min-w-0 flex-1">
               <div className="eyebrow">{t.site.scoreFor(t.site.types[type])}</div>
               <div className="mt-1 text-lg font-semibold text-ink-1">
-                {t.site.bands[result.band]} <span className="num text-[13px] font-normal text-ink-3">({result.total} {t.site.outOf})</span>
+                {blocked ? t.site.blockedBand : result.incomplete ? t.site.incompleteBand : t.site.bands[result.band]}{' '}
+                {!(result.incomplete && !blocked) && <span className="num text-[13px] font-normal text-ink-3">({result.total} {t.site.outOf})</span>}
               </div>
+              {result.incomplete && !blocked && (
+                <div role="alert" className="mt-1 space-y-1 text-[13px] text-ink-1">
+                  <p className="flex gap-1.5">
+                    <Icon name="warning" size={16} className="mt-0.5 shrink-0 text-stamp-sug" />
+                    {t.site.incomplete}
+                  </p>
+                  <button type="button" className={btn} onClick={() => void evaluate()}>
+                    {t.common.retry}
+                  </button>
+                </div>
+              )}
+              {ev.terrain?.waterEstimated && <p className="mt-1 text-[12px] text-ink-3">{t.site.waterEstimated}</p>}
+              {blockedText && (
+                <p role="alert" className="mt-1 flex gap-1.5 text-[14px] font-medium text-ink-1">
+                  <Icon name="warning" size={16} className="mt-0.5 shrink-0 text-stamp-sug" />
+                  {blockedText}
+                </p>
+              )}
               <div className="mt-2 text-[13px] text-ink-2">
                 {result.concerns.length ? (
                   <>
@@ -272,31 +331,46 @@ export default function SiteScorePanel() {
           </div>
 
           <div>
-            <h4 className="eyebrow mb-2">{t.site.breakdown}</h4>
-            <ul className="space-y-2.5">
-              {FACTORS.filter((f) => WEIGHTS[type][f] > 0)
-                .sort((a, b) => WEIGHTS[type][b] - WEIGHTS[type][a])
-                .map((f) => {
-                  const v = result.sub[f];
-                  const concern = result.concerns.includes(f);
-                  return (
-                    <li key={f}>
-                      <div className="flex items-baseline justify-between gap-2 text-[13px]">
-                        <span className="font-medium text-ink-1">
-                          {concern && <Icon name="warning" size={13} className="mr-1 inline -translate-y-px text-stamp-sug" />}
-                          {t.site.factors[f].name} <span className="text-[11px] font-normal text-ink-3">· {t.site.weight(Math.round(WEIGHTS[type][f] * 100))}</span>
-                        </span>
-                        <span className="num text-ink-1">{Number.isFinite(v) ? Math.round(v) : '—'}</span>
-                      </div>
-                      <div className="mt-1 h-1.5 rounded-full bg-surface-3" aria-hidden="true">
-                        <div className="h-1.5 rounded-full bg-accent" style={{ width: `${Number.isFinite(v) ? v : 0}%`, opacity: concern ? 0.55 : 1 }} />
-                      </div>
-                      <p className="num mt-1 text-[11px] text-ink-3">{detailLine(f, ev.stats!.mean, ev.trend!, t)}</p>
-                      <p className="text-[11px] text-ink-3">{t.site.factors[f].why}</p>
-                    </li>
-                  );
-                })}
-            </ul>
+            <h4 className="sr-only">{t.site.breakdown}</h4>
+            {!result.terrainUsed && (
+              <p role="alert" className="mb-3 flex gap-1.5 rounded-lg border border-stamp-sug p-2 text-[12px] text-ink-1">
+                <Icon name="warning" size={14} className="mt-0.5 shrink-0 text-stamp-sug" /> {t.site.groundMissing}
+              </p>
+            )}
+            {([
+              [t.site.groundTitle, TERRAIN_FACTORS],
+              [t.site.climateTitle, CLIMATE_FACTORS],
+            ] as [string, FactorId[]][]).map(([title, group]) => {
+              const items = group.filter((f) => result.weights[f] > 0).sort((a, b) => result.weights[b] - result.weights[a]);
+              if (!items.length) return null;
+              return (
+                <div key={title} className="mb-4">
+                  <h5 className="eyebrow mb-2">{title}</h5>
+                  <ul className="space-y-2.5">
+                    {items.map((f) => {
+                      const v = result.sub[f];
+                      const concern = result.concerns.includes(f);
+                      return (
+                        <li key={f}>
+                          <div className="flex items-baseline justify-between gap-2 text-[13px]">
+                            <span className="font-medium text-ink-1">
+                              {concern && <Icon name="warning" size={13} className="mr-1 inline -translate-y-px text-stamp-sug" />}
+                              {t.site.factors[f].name} <span className="text-[11px] font-normal text-ink-3">· {t.site.weight(Math.round(result.weights[f] * 100))}</span>
+                            </span>
+                            <span className="num text-ink-1">{Number.isFinite(v) ? Math.round(v) : '—'}</span>
+                          </div>
+                          <div className="mt-1 h-1.5 rounded-full bg-surface-3" aria-hidden="true">
+                            <div className="h-1.5 rounded-full bg-accent" style={{ width: `${Number.isFinite(v) ? v : 0}%`, opacity: concern ? 0.55 : 1 }} />
+                          </div>
+                          <p className="num mt-1 text-[11px] text-ink-3">{detailLine(f, ev.stats!.mean, ev.trend!, ev.terrain, t)}</p>
+                          <p className="text-[11px] text-ink-3">{t.site.factors[f].why}</p>
+                        </li>
+                      );
+                    })}
+                  </ul>
+                </div>
+              );
+            })}
             {samples.length > 1 && (
               <p className="num mt-2 text-[11px] text-ink-3">
                 {t.site.varies} {t.site.detail.heat(`${fmt(ev.stats.min.hottestHour, 1)}–${fmt(ev.stats.max.hottestHour, 1)}`, `${fmt(ev.stats.min.maxDewPoint, 1)}–${fmt(ev.stats.max.maxDewPoint, 1)}`)}

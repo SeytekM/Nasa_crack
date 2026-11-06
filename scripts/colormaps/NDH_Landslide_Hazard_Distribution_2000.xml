@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<ColorMap xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+          xsi:noNamespaceSchemaLocation="http://gibs.earthdata.nasa.gov/schemas/ColorMap_v1.0.xsd"
+          units="">
+  <ColorMapEntry rgb="0,0,0" transparent="true" value="[255]" label="No Data" />
+  <ColorMapEntry rgb="254,254,254" transparent="false" value="[2]" label="Negligible to Very Low" />
+  <ColorMapEntry rgb="255,254,204" transparent="false" value="[3]" label="Low" />
+  <ColorMapEntry rgb="255,237,160" transparent="false" value="[4]" label="Low to Moderate" />
+  <ColorMapEntry rgb="254,217,118" transparent="false" value="[5]" label="Moderate" />
+  <ColorMapEntry rgb="254,178,76" transparent="false" value="[6]" label="Medium" />
+  <ColorMapEntry rgb="253,141,60" transparent="false" value="[7]" label="Medium to High" />
+  <ColorMapEntry rgb="252,78,32" transparent="false" value="[8]" label="High" />
+  <ColorMapEntry rgb="177,0,38" transparent="false" value="[9,255)" label="Very High" />
+</ColorMap>

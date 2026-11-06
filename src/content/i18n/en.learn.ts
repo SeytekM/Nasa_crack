@@ -73,8 +73,8 @@ export const learnContent = {
       formula: 'ΔBIC = BIC_line − BIC_jump > 10',
     },
     {
-      title: 'Site check (climate suitability score)',
-      body: 'Draw an area and pick a building type. For every NASA grid cell inside the area (max 6) we compute 30-year statistics: hottest and coldest hour of the year, most humid month, frost days, wettest month, topsoil wetness, annual rain, deepest snow, mean wind, sunlight, plus 1981-present trends of the hottest hour and of rainfall. Each statistic becomes a 0–100 sub-score through a simple ramp (rules in src/content/siteRules.ts). The total is a weighted geometric mean with weights per building type (e.g. heat 25 % for hospitals, sunshine 50 % for solar plants). It is a climate screening only: earthquakes, slopes, flood zones, soils, roads and population are not included.',
+      title: 'Site check (site suitability score)',
+      body: 'Draw an area and pick a building type. Ground: we download NASA GIBS maps for the area and decode them pixel by pixel with the official colour tables — MODIS water mask (share of water), ASTER GDEM elevation (mean altitude and share of land with slopes ≤ 15 %, ~250 m pixels, 3×3 smoothed), NASA landslide hazard (share rated High/Very High). Areas that are ≥ 50 % water, have < 10 % gentle land or lie above 4500 m are “not buildable”, and the total can never exceed 25 + 0.75 × the worst ground sub-score. Climate: for every NASA grid cell inside the area (max 6) we compute 30-year statistics: hottest and coldest hour of the year, most humid month, frost days, wettest month, topsoil wetness, annual rain, deepest snow, mean wind, sunlight, plus 1981-present trends of the hottest hour and of rainfall. Each statistic becomes a 0–100 sub-score through a simple ramp (rules in src/content/siteRules.ts). The total is a weighted geometric mean with weights per building type (e.g. heat 25 % for hospitals, sunshine 50 % for solar plants). It is a screening only: earthquakes, river flood zones, soils, roads and population are not included.',
       formula: 'score = 100 · exp( Σ wᵢ · ln(max(5, sᵢ)/100) )',
     },
   ],

@@ -6,7 +6,8 @@
 import type { PointDataset } from '../../data/types';
 import { pointRecords } from '../../data/adapters';
 import { analyzeMonthly, annualAggregate, sliceYears } from '../../stats';
-import { BANDS, CLIMATOLOGY_YEARS, FACTORS, GEOMETRIC_FLOOR, RAMPS, TREND_RULES, WEIGHTS, type BuildingType, type FactorId, type Ramp, type ScoreBand } from '../../content/siteRules';
+import { BANDS, CLIMATOLOGY_YEARS, FACTORS, factorWeight, GATES, GEOMETRIC_FLOOR, RAMPS, TERRAIN_FACTORS, TREND_RULES, WEAKEST_LINK, type BuildingType, type FactorId, type Ramp, type ScoreBand } from '../../content/siteRules';
+import type { TerrainStats } from './terrain';
 
 /** Polygon ring as [lon, lat] vertices (not closed: first ≠ last). */
 export type Ring = [number, number][];
@@ -194,7 +195,7 @@ const blend = (parts: [number, number][]) => {
   return w ? ok.reduce((s, [v, k]) => s + v * k, 0) / w : NaN;
 };
 
-export function subScores(s: ClimateStats, tr: TrendInfo): Record<FactorId, number> {
+export function subScores(s: ClimateStats, tr: TrendInfo, g?: TerrainStats | null): Record<FactorId, number> {
   const heatPenalty = tr.heatSignificant && tr.heatPerDecade > 0 ? Math.min(TREND_RULES.heatMaxPenalty, (tr.heatPerDecade / 0.1) * TREND_RULES.heatPerTenth) : 0;
   const excess = Math.max(0, Math.abs(tr.precipPctPerDecade) - TREND_RULES.precipFreeBand);
   const precipPenalty = tr.precipSignificant && tr.precipMean >= TREND_RULES.precipMinAnnualMm && Number.isFinite(excess) ? Math.min(TREND_RULES.precipMaxPenalty, excess * TREND_RULES.precipPerPercent) : 0;
@@ -216,11 +217,34 @@ export function subScores(s: ClimateStats, tr: TrendInfo): Record<FactorId, numb
     wind: ramp(s.meanWind, RAMPS.meanWind),
     solar: ramp(s.solar, RAMPS.solar),
     trend: Math.max(0, 100 - heatPenalty - precipPenalty),
+    land: ramp(g?.waterFraction ?? NaN, RAMPS.waterFraction),
+    slope: ramp(g?.gentleFraction ?? NaN, RAMPS.gentleFraction),
+    altitude: ramp(g?.elevMean ?? NaN, RAMPS.elevation),
+    landslide: ramp(g?.landslideHigh ?? NaN, RAMPS.landslideHigh),
   };
+}
+
+export type BlockReason = 'water' | 'steep' | 'altitude';
+
+/** Hard stops that make a site "not buildable" regardless of climate. */
+export function blockReason(g?: TerrainStats | null): BlockReason | null {
+  if (!g) return null;
+  if (g.waterFraction >= GATES.waterFraction) return 'water';
+  if (g.elevMean > GATES.elevation) return 'altitude';
+  if (g.gentleFraction < GATES.gentleFraction) return 'steep';
+  return null;
 }
 
 export interface SiteScore {
   total: number;
+  /** Water check missing (mask failed and no fallback): result must not be trusted */
+  incomplete: boolean;
+  /** Set when a hard stop applies (total is capped) */
+  blocked: BlockReason | null;
+  /** False when the ground layers could not be read (climate-only score) */
+  terrainUsed: boolean;
+  /** Effective weight of each factor in this score */
+  weights: Record<FactorId, number>;
   band: ScoreBand['id'];
   sub: Record<FactorId, number>;
   /** Points each factor costs the total: weight × (100 − sub-score) */
@@ -230,9 +254,10 @@ export interface SiteScore {
   strengths: FactorId[];
 }
 
-export function scoreSite(stats: ClimateStats, tr: TrendInfo, type: BuildingType): SiteScore {
-  const sub = subScores(stats, tr);
-  const w = WEIGHTS[type];
+export function scoreSite(stats: ClimateStats, tr: TrendInfo, type: BuildingType, g?: TerrainStats | null): SiteScore {
+  const sub = subScores(stats, tr, g);
+  const terrainUsed = !!g && (Number.isFinite(sub.land) || Number.isFinite(sub.slope));
+  const w = Object.fromEntries(FACTORS.map((f) => [f, factorWeight(type, f, terrainUsed)])) as Record<FactorId, number>;
   // weighted geometric mean: exp(Σ w·ln(s/100)) / Σ w
   let logSum = 0;
   let wsum = 0;
@@ -246,10 +271,23 @@ export function scoreSite(stats: ClimateStats, tr: TrendInfo, type: BuildingType
     wsum += w[f];
     losses[f] = w[f] * (100 - sub[f]);
   }
-  const score = wsum ? Math.round(100 * Math.exp(logSum / wsum)) : NaN;
+  let score = wsum ? Math.round(100 * Math.exp(logSum / wsum)) : NaN;
+  // weakest link: bad ground cannot be averaged away by a pleasant climate
+  if (terrainUsed) {
+    const groundSubs = TERRAIN_FACTORS.map((f) => sub[f]).filter(Number.isFinite);
+    if (groundSubs.length) score = Math.min(score, Math.round(WEAKEST_LINK.base + WEAKEST_LINK.slope * Math.min(...groundSubs)));
+  }
+  const blocked = terrainUsed ? blockReason(g) : null;
+  if (blocked === 'water') score = Math.min(score, GATES.waterCap);
+  if (blocked === 'steep') score = Math.min(score, GATES.steepCap);
+  if (blocked === 'altitude') score = Math.min(score, GATES.altitudeCap);
   const ranked = FACTORS.filter((f) => w[f] > 0 && Number.isFinite(sub[f]));
   return {
     total: score,
+    incomplete: !!g && !g.available.water && !g.waterEstimated,
+    blocked,
+    terrainUsed,
+    weights: w,
     band: (BANDS.find((b) => score >= b.min) ?? BANDS[BANDS.length - 1]).id,
     sub,
     losses,

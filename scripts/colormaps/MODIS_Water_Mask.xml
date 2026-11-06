@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<ColorMap xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+          xsi:noNamespaceSchemaLocation="http://gibs.earthdata.nasa.gov/schemas/ColorMap_v1.0.xsd"
+          units="">
+  <ColorMapEntry rgb="0,0,0" transparent="true" label="No Data" />
+  <ColorMapEntry rgb="168,248,255" transparent="false" label="Water" />
+</ColorMap>
